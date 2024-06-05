@@ -2,6 +2,7 @@ using FNFNewBot.DTO;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace FNFNewBot
 {
@@ -9,7 +10,7 @@ namespace FNFNewBot
     {
         private IntPtr hookId = IntPtr.Zero;
         private LowLevelKeyboardProc proc;
-
+        private static List<Note> easyNotes = new List<Note>();
 
         public MainForm()
         {
@@ -41,6 +42,9 @@ namespace FNFNewBot
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr GetModuleHandle(string lpModuleName);
 
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+
         private static IntPtr SetHook(LowLevelKeyboardProc proc)
         {
             using (Process curProcess = Process.GetCurrentProcess())
@@ -65,10 +69,89 @@ namespace FNFNewBot
                 {
                     MessageBox.Show("Run", "Thread Running", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
+                else if (key == Keys.Enter)
+                {
+                    ExecuteEasyNotesInParallel();
+                }
             }
             return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
         }
 
+        private static void ExecuteEasyNotesInParallel()
+        {
+            var notesByDirection = easyNotes.GroupBy(note => note.Direction).ToDictionary(g => g.Key, g => g.ToList());
+
+            List<Thread> threads = new List<Thread>();
+
+            foreach (var directionNotes in notesByDirection)
+            {
+                Thread thread = new Thread(() => ExecuteNotes(directionNotes.Value));
+                threads.Add(thread);
+                thread.Start();
+            }
+
+            foreach (var thread in threads)
+            {
+                thread.Join();
+            }
+        }
+
+        private static void ExecuteNotes(List<Note> notes)
+        {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            foreach (var note in notes)
+            {
+                WaitForNanoseconds(stopwatch, (long)(note.Time * 1000000));
+                PressKey(note.Direction, note.Length);
+            }
+
+            stopwatch.Stop();
+        }
+
+        private static void PressKey(int direction, double? length)
+        {
+            byte keyCode = direction switch
+            {
+                0 => (byte)Keys.Left,
+                1 => (byte)Keys.Up,
+                2 => (byte)Keys.Right,
+                3 => (byte)Keys.Down,
+                _ => (byte)0
+            };
+
+            keybd_event(keyCode, 0, 0, 0);
+            if (length.HasValue)
+            {
+                WaitForNanoseconds(null, (long)(length.Value * 1000000));
+            }
+            keybd_event(keyCode, 0, 2, 0);
+        }
+
+        private static void WaitForNanoseconds(Stopwatch? stopwatch, long nanoseconds)
+        {
+            long ticksPerNanosecond = Stopwatch.Frequency / 1000000000;
+            long targetTicks = nanoseconds * ticksPerNanosecond;
+
+            SpinWait spinWait = new SpinWait();
+
+            if (stopwatch != null)
+            {
+                while (stopwatch.ElapsedTicks < targetTicks)
+                {
+                    spinWait.SpinOnce();
+                }
+            }
+            else
+            {
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedTicks < targetTicks)
+                {
+                    spinWait.SpinOnce();
+                }
+            }
+        }
 
         private void buttonChooseFolder_Click(object sender, EventArgs e)
         {
@@ -128,10 +211,8 @@ namespace FNFNewBot
             try
             {
                 string jsonContent = File.ReadAllText(filePath);
-
                 Song song = JsonConvert.DeserializeObject<Song>(jsonContent);
-
-                MessageBox.Show($"Song Title: {song.Notes.Normal.Count}");
+                easyNotes = song.Notes.Easy;
             }
             catch (Exception ex)
             {
