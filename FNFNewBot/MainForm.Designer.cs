@@ -79,6 +79,7 @@
             Controls.Add(textBoxFolder);
             Name = "MainForm";
             Text = "FNF New Version Bot";
+            FormClosing += MainForm_FormClosing;
             Load += MainForm_Load;
             ResumeLayout(false);
             PerformLayout();
