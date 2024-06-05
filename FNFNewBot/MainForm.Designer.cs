@@ -30,7 +30,7 @@
         {
             textBoxFolder = new TextBox();
             buttonChooseFolder = new Button();
-            treeViewJsonFile = new TreeView();
+            treeViewJsonFiles = new TreeView();
             logTextBox = new RichTextBox();
             SuspendLayout();
             // 
@@ -38,30 +38,33 @@
             // 
             textBoxFolder.Location = new Point(12, 12);
             textBoxFolder.Name = "textBoxFolder";
-            textBoxFolder.Size = new Size(275, 23);
+            textBoxFolder.ReadOnly = true;
+            textBoxFolder.Size = new Size(629, 23);
             textBoxFolder.TabIndex = 0;
             // 
             // buttonChooseFolder
             // 
-            buttonChooseFolder.Location = new Point(293, 12);
+            buttonChooseFolder.Location = new Point(647, 12);
             buttonChooseFolder.Name = "buttonChooseFolder";
             buttonChooseFolder.Size = new Size(141, 23);
             buttonChooseFolder.TabIndex = 1;
             buttonChooseFolder.Text = "Choose Folder";
             buttonChooseFolder.UseVisualStyleBackColor = true;
+            buttonChooseFolder.Click += buttonChooseFolder_Click;
             // 
-            // treeViewJsonFile
+            // treeViewJsonFiles
             // 
-            treeViewJsonFile.Location = new Point(12, 163);
-            treeViewJsonFile.Name = "treeViewJsonFile";
-            treeViewJsonFile.Size = new Size(422, 275);
-            treeViewJsonFile.TabIndex = 2;
+            treeViewJsonFiles.Location = new Point(12, 242);
+            treeViewJsonFiles.Name = "treeViewJsonFiles";
+            treeViewJsonFiles.Size = new Size(422, 196);
+            treeViewJsonFiles.TabIndex = 2;
+            treeViewJsonFiles.NodeMouseDoubleClick += treeViewJsonFiles_NodeMouseDoubleClick;
             // 
             // logTextBox
             // 
-            logTextBox.Location = new Point(440, 12);
+            logTextBox.Location = new Point(440, 43);
             logTextBox.Name = "logTextBox";
-            logTextBox.Size = new Size(348, 426);
+            logTextBox.Size = new Size(348, 395);
             logTextBox.TabIndex = 3;
             logTextBox.Text = "";
             // 
@@ -71,7 +74,7 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
             Controls.Add(logTextBox);
-            Controls.Add(treeViewJsonFile);
+            Controls.Add(treeViewJsonFiles);
             Controls.Add(buttonChooseFolder);
             Controls.Add(textBoxFolder);
             Name = "MainForm";
@@ -85,7 +88,7 @@
 
         private TextBox textBoxFolder;
         private Button buttonChooseFolder;
-        private TreeView treeViewJsonFile;
+        private TreeView treeViewJsonFiles;
         private RichTextBox logTextBox;
     }
 }
