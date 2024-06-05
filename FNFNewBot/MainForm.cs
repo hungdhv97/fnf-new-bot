@@ -1,5 +1,5 @@
+using FNFNewBot.DTO;
 using Newtonsoft.Json;
-using System.Xml;
 
 namespace FNFNewBot
 {
@@ -46,8 +46,11 @@ namespace FNFNewBot
                 FileInfo[] files = subDir.GetFiles("*.json");
                 foreach (FileInfo file in files)
                 {
-                    TreeNode fileNode = new TreeNode(file.Name) { Tag = file.FullName };
-                    aNode.Nodes.Add(fileNode);
+                    if (!file.Name.Contains("metadata", StringComparison.OrdinalIgnoreCase))
+                    {
+                        TreeNode fileNode = new TreeNode(file.Name) { Tag = file.FullName };
+                        aNode.Nodes.Add(fileNode);
+                    }
                 }
                 if (subSubDirs.Length != 0)
                 {
@@ -70,8 +73,10 @@ namespace FNFNewBot
             try
             {
                 string jsonContent = File.ReadAllText(filePath);
-                var jsonObject = JsonConvert.DeserializeObject(jsonContent);
-                MessageBox.Show(JsonConvert.SerializeObject(jsonObject, Newtonsoft.Json.Formatting.Indented), "JSON Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                Song song = JsonConvert.DeserializeObject<Song>(jsonContent);
+
+                MessageBox.Show($"Song Title: {song.Notes.Normal.Count}");
             }
             catch (Exception ex)
             {
