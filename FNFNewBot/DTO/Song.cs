@@ -71,7 +71,10 @@ namespace FNFNewBot.DTO
         public List<Note> Hard { get; set; } = new();
 
         [JsonProperty("normal")]
-        public List<Note> Normal { get; set; } = new();
+        public List<Note> Normal { get; set; } = new();        
+        
+        [JsonProperty("erect")]
+        public List<Note> Erect { get; set; } = new();
     }
 
     public class Song

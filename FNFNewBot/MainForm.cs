@@ -15,6 +15,9 @@ namespace FNFNewBot
         private IntPtr hookId = IntPtr.Zero;
         private LowLevelKeyboardProc proc;
         private static List<Note> easyNotes = new List<Note>();
+        private static List<Note> normalNotes = new List<Note>();
+        private static List<Note> hardNotes = new List<Note>();
+        private static List<Note> erectNotes = new List<Note>();
         private Stopwatch stopwatch;
         private bool isExecuting = false;
         private bool isClosing = false;
@@ -73,13 +76,13 @@ namespace FNFNewBot
                 }
                 else if (key == Keys.Enter)
                 {
-                    ExecuteEasyNotesInParallelAsync();
+                    ExecuteNotesInParallelAsync();
                 }
             }
             return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
         }
 
-        private async void ExecuteEasyNotesInParallelAsync()
+        private async void ExecuteNotesInParallelAsync()
         {
             if (isExecuting)
             {
@@ -87,35 +90,57 @@ namespace FNFNewBot
                 return;
             }
 
-            if (!easyNotes.Any())
+            var selectedDifficulty = comboBoxDifficulty.SelectedItem?.ToString();
+            if (string.IsNullOrEmpty(selectedDifficulty))
             {
-                Log($"{DateTime.Now:HH:mm:ss.fff}\tPlease choose a song", Color.Red);
+                Log($"{DateTime.Now:HH:mm:ss.fff}\tPlease select a difficulty", Color.Red);
+                return;
+            }
+
+            var notes = GetNotesForDifficulty(selectedDifficulty);
+            if (!notes.Any())
+            {
+                Log($"{DateTime.Now:HH:mm:ss.fff}\tNo notes available for the selected difficulty", Color.Red);
                 return;
             }
 
             Log($"{DateTime.Now:HH:mm:ss.fff}\tStart");
 
             isExecuting = true;
-            await Task.Run(() => ExecuteEasyNotesInParallel());
+            await Task.Run(() => ExecuteNotesInParallel(notes));
             isExecuting = false;
             isClosing = false;
 
             Log($"{DateTime.Now:HH:mm:ss.fff}\tStop");
         }
 
-        private void ExecuteEasyNotesInParallel()
+
+        private List<Note> GetNotesForDifficulty(string difficulty)
         {
-            var notesByDirection = easyNotes
-                    .Where(note => note.Direction >= 0 && note.Direction <= 3)
-                    .GroupBy(note => note.Direction)
-                    .ToDictionary(g => g.Key, g => g.ToList());
+            return difficulty switch
+            {
+                "Easy" => easyNotes,
+                "Normal" => normalNotes,
+                "Hard" => hardNotes,
+                "Erect" => erectNotes,
+                _ => new List<Note>()
+            };
+        }
+
+
+        private void ExecuteNotesInParallel(List<Note> notes)
+        {
+            var notesByDirection = notes
+                .Where(note => note.Direction >= 0 && note.Direction <= 3)
+                .GroupBy(note => note.Direction)
+                .ToDictionary(g => g.Key, g => g.ToList());
 
             List<Task> tasks = new List<Task>();
 
             foreach (var directionNotes in notesByDirection)
             {
-                var notes = directionNotes.Value;
-                tasks.Add(Task.Run(() => ExecuteNotes(notes)));
+                var directionNoteList = directionNotes.Value;
+                tasks.Add(Task.Run(() => ExecuteNotes(directionNoteList)));
             }
             stopwatch = Stopwatch.StartNew();
             try
@@ -212,6 +237,19 @@ namespace FNFNewBot
             treeViewJsonFiles.Nodes.Add(rootNode);
         }
 
+        private void PopulateDifficultyComboBox(Difficulty notes)
+        {
+            comboBoxDifficulty.Items.Clear();
+            if (notes.Easy.Any()) comboBoxDifficulty.Items.Add("Easy");
+            if (notes.Normal.Any()) comboBoxDifficulty.Items.Add("Normal");
+            if (notes.Hard.Any()) comboBoxDifficulty.Items.Add("Hard");
+            if (notes.Erect.Any()) comboBoxDifficulty.Items.Add("Erect");
+            if (comboBoxDifficulty.Items.Count > 0)
+            {
+                comboBoxDifficulty.SelectedIndex = 0;
+            }
+        }
+
         private void GetDirectories(DirectoryInfo[] subDirs, TreeNode nodeToAddTo)
         {
             foreach (DirectoryInfo subDir in subDirs)
@@ -239,17 +277,21 @@ namespace FNFNewBot
         {
             if (e.Node.Tag is string filePath && filePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
             {
-                ReadAndDisplayJsonFile(filePath);
+                ReadJsonFile(filePath);
             }
         }
 
-        private void ReadAndDisplayJsonFile(string filePath)
+        private void ReadJsonFile(string filePath)
         {
             try
             {
                 string jsonContent = File.ReadAllText(filePath);
                 Song song = JsonConvert.DeserializeObject<Song>(jsonContent);
                 easyNotes = song.Notes.Easy;
+                normalNotes = song.Notes.Normal;
+                hardNotes = song.Notes.Hard;
+                erectNotes = song.Notes.Erect;
+                PopulateDifficultyComboBox(song.Notes);
             }
             catch (Exception ex)
             {
