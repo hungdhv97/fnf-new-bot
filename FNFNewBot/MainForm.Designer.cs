@@ -56,15 +56,15 @@
             // 
             treeViewJsonFiles.Location = new Point(12, 242);
             treeViewJsonFiles.Name = "treeViewJsonFiles";
-            treeViewJsonFiles.Size = new Size(422, 196);
+            treeViewJsonFiles.Size = new Size(346, 196);
             treeViewJsonFiles.TabIndex = 2;
             treeViewJsonFiles.NodeMouseDoubleClick += treeViewJsonFiles_NodeMouseDoubleClick;
             // 
             // logTextBox
             // 
-            logTextBox.Location = new Point(440, 43);
+            logTextBox.Location = new Point(364, 43);
             logTextBox.Name = "logTextBox";
-            logTextBox.Size = new Size(348, 395);
+            logTextBox.Size = new Size(424, 395);
             logTextBox.TabIndex = 3;
             logTextBox.Text = "";
             // 

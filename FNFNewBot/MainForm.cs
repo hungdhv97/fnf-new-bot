@@ -17,6 +17,7 @@ namespace FNFNewBot
         private LowLevelKeyboardProc proc;
         private static List<Note> easyNotes = new List<Note>();
         private Stopwatch stopwatch;
+        private bool isExecuting = false;
 
         public MainForm()
         {
@@ -72,7 +73,6 @@ namespace FNFNewBot
                 }
                 else if (key == Keys.Enter)
                 {
-                    Log($"{DateTime.Now:HH:mm:ss.fff}\tStart");
                     ExecuteEasyNotesInParallelAsync();
                 }
             }
@@ -81,7 +81,16 @@ namespace FNFNewBot
 
         private async void ExecuteEasyNotesInParallelAsync()
         {
+            if (isExecuting)
+            {
+                Log($"{DateTime.Now:HH:mm:ss.fff}\tRunning");
+                return;
+            }
+            Log($"{DateTime.Now:HH:mm:ss.fff}\tStart");
+
+            isExecuting = true;
             await Task.Run(ExecuteEasyNotesInParallel);
+            isExecuting = false;
         }
 
         private void ExecuteEasyNotesInParallel()
@@ -98,20 +107,18 @@ namespace FNFNewBot
                 var notes = directionNotes.Value;
                 tasks.Add(Task.Run(() => ExecuteNotes(notes)));
             }
-
+            stopwatch = Stopwatch.StartNew();
             Task.WhenAll(tasks).Wait();
         }
 
         private void ExecuteNotes(List<Note> notes)
         {
-            stopwatch = Stopwatch.StartNew();
             foreach (var note in notes)
             {
                 long targetTimeNanoseconds = (long)(note.Time * OneMillion);
                 WaitForNanoseconds(stopwatch, targetTimeNanoseconds);
                 PressKey(note.Direction, note.Length);
             }
-            stopwatch.Stop();
         }
 
         private void PressKey(int direction, double? length)
@@ -134,7 +141,16 @@ namespace FNFNewBot
                 _ => string.Empty
             };
 
-            Log($"{stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyName}\t{(length.HasValue ? length.Value.ToString() : string.Empty)}");
+            Color keyColor = direction switch
+            {
+                0 => Color.Brown,
+                1 => Color.Green,
+                2 => Color.Blue,
+                3 => Color.Purple,
+                _ => Color.Black
+            };
+
+            Log($"{stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyName}{new string('\t', 4 - direction)}{length}", keyColor);
 
             keybd_event(keyCode, 0, 0, 0);
 
