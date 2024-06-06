@@ -2,7 +2,6 @@
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -18,6 +17,7 @@ namespace FNFNewBot
         private static List<Note> easyNotes = new List<Note>();
         private Stopwatch stopwatch;
         private bool isExecuting = false;
+        private bool isClosing = false;
 
         public MainForm()
         {
@@ -69,7 +69,7 @@ namespace FNFNewBot
 
                 if (key == Keys.Escape)
                 {
-                    Log($"{DateTime.Now:HH:mm:ss.fff}\tStop");
+                    isClosing = true;
                 }
                 else if (key == Keys.Enter)
                 {
@@ -86,11 +86,21 @@ namespace FNFNewBot
                 Log($"{DateTime.Now:HH:mm:ss.fff}\tRunning");
                 return;
             }
+
+            if (!easyNotes.Any())
+            {
+                Log($"{DateTime.Now:HH:mm:ss.fff}\tPlease choose a song", Color.Red);
+                return;
+            }
+
             Log($"{DateTime.Now:HH:mm:ss.fff}\tStart");
 
             isExecuting = true;
-            await Task.Run(ExecuteEasyNotesInParallel);
+            await Task.Run(() => ExecuteEasyNotesInParallel());
             isExecuting = false;
+            isClosing = false;
+
+            Log($"{DateTime.Now:HH:mm:ss.fff}\tStop");
         }
 
         private void ExecuteEasyNotesInParallel()
@@ -108,7 +118,14 @@ namespace FNFNewBot
                 tasks.Add(Task.Run(() => ExecuteNotes(notes)));
             }
             stopwatch = Stopwatch.StartNew();
-            Task.WhenAll(tasks).Wait();
+            try
+            {
+                Task.WhenAll(tasks).Wait();
+            }
+            catch (AggregateException ex)
+            {
+                Log($"Execution cancelled: {ex.Message}");
+            }
         }
 
         private void ExecuteNotes(List<Note> notes)
@@ -117,6 +134,7 @@ namespace FNFNewBot
             {
                 long targetTimeNanoseconds = (long)(note.Time * OneMillion);
                 WaitForNanoseconds(stopwatch, targetTimeNanoseconds);
+                if (isClosing) break;
                 PressKey(note.Direction, note.Length);
             }
         }
@@ -167,6 +185,7 @@ namespace FNFNewBot
             long targetTicks = (long)(nanoseconds * 0.01);
             while (stopwatch.ElapsedTicks < targetTicks)
             {
+                if (isClosing) break;
                 Thread.SpinWait(1);
             }
         }
@@ -252,18 +271,18 @@ namespace FNFNewBot
                     logTextBox.SelectionLength = 0;
                     logTextBox.SelectionColor = color.Value;
                 }
-
                 logTextBox.AppendText(message + Environment.NewLine);
-
                 if (color.HasValue)
                 {
                     logTextBox.SelectionColor = logTextBox.ForeColor;
                 }
+                logTextBox.ScrollToCaret();
             }
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            isClosing = true;
             UnhookWindowsHookEx(hookId);
         }
     }
