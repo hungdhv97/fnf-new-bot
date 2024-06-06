@@ -1,16 +1,21 @@
-using FNFNewBot.DTO;
+﻿using FNFNewBot.DTO;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Windows.Forms;
 
 namespace FNFNewBot
 {
     public partial class MainForm : Form
     {
+        private const long OneMillion = 1_000_000;
+        private const long OneBillion = 1_000_000_000;
+
         private IntPtr hookId = IntPtr.Zero;
         private LowLevelKeyboardProc proc;
         private static List<Note> easyNotes = new List<Note>();
+        private Stopwatch stopwatch;
 
         public MainForm()
         {
@@ -24,7 +29,6 @@ namespace FNFNewBot
         }
 
         private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
-        private static LowLevelKeyboardProc _proc = HookCallback;
         private const int WH_KEYBOARD_LL = 13;
         private const int WM_KEYDOWN = 0x0100;
         private const int WM_KEYUP = 0x0101;
@@ -54,32 +58,33 @@ namespace FNFNewBot
             }
         }
 
-        private static IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+        private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
             if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN)
             {
                 int vkCode = Marshal.ReadInt32(lParam);
                 Keys key = (Keys)vkCode;
 
-                if (key == Keys.X)
+
+                if (key == Keys.Escape)
                 {
-                    MessageBox.Show("Stop", "Thread Stopped", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else if (key == Keys.Z)
-                {
-                    MessageBox.Show("Run", "Thread Running", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Log($"{DateTime.Now:HH:mm:ss.fff}\tStop");
                 }
                 else if (key == Keys.Enter)
                 {
+                    Log($"{DateTime.Now:HH:mm:ss.fff}\tStart");
                     ExecuteEasyNotesInParallel();
                 }
             }
             return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
         }
 
-        private static void ExecuteEasyNotesInParallel()
+        private void ExecuteEasyNotesInParallel()
         {
-            var notesByDirection = easyNotes.GroupBy(note => note.Direction).ToDictionary(g => g.Key, g => g.ToList());
+            var notesByDirection = easyNotes
+                    .Where(note => note.Direction >= 0 && note.Direction <= 3)
+                    .GroupBy(note => note.Direction)
+                    .ToDictionary(g => g.Key, g => g.ToList());
 
             List<Thread> threads = new List<Thread>();
 
@@ -96,21 +101,19 @@ namespace FNFNewBot
             }
         }
 
-        private static void ExecuteNotes(List<Note> notes)
+        private void ExecuteNotes(List<Note> notes)
         {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-
+            stopwatch = Stopwatch.StartNew();
             foreach (var note in notes)
             {
-                WaitForNanoseconds(stopwatch, (long)(note.Time * 1000000));
+                long targetTimeNanoseconds = (long)(note.Time * OneMillion);
+                WaitForNanoseconds(stopwatch, targetTimeNanoseconds);
                 PressKey(note.Direction, note.Length);
             }
-
             stopwatch.Stop();
         }
 
-        private static void PressKey(int direction, double? length)
+        private void PressKey(int direction, double? length)
         {
             byte keyCode = direction switch
             {
@@ -121,35 +124,33 @@ namespace FNFNewBot
                 _ => (byte)0
             };
 
-            keybd_event(keyCode, 0, 0, 0);
-            if (length.HasValue)
+            string keyName = direction switch
             {
-                WaitForNanoseconds(null, (long)(length.Value * 1000000));
+                0 => "←",
+                1 => "↑",
+                2 => "→",
+                3 => "↓",
+                _ => string.Empty
+            };
+
+            Log($"{stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyName}\t{(length.HasValue ? length.Value.ToString() : string.Empty)}");
+
+            keybd_event(keyCode, 0, 0, 0);
+
+            if (length.HasValue && length.Value > 0)
+            {
+                WaitForNanoseconds(Stopwatch.StartNew(), (long)(length.Value * OneMillion));
             }
+
             keybd_event(keyCode, 0, 2, 0);
         }
 
-        private static void WaitForNanoseconds(Stopwatch? stopwatch, long nanoseconds)
+        private void WaitForNanoseconds(Stopwatch stopwatch, long nanoseconds)
         {
-            long ticksPerNanosecond = Stopwatch.Frequency / 1000000000;
-            long targetTicks = nanoseconds * ticksPerNanosecond;
-
-            SpinWait spinWait = new SpinWait();
-
-            if (stopwatch != null)
+            long targetTicks = (long)(nanoseconds * 0.01);
+            while (stopwatch.ElapsedTicks < targetTicks)
             {
-                while (stopwatch.ElapsedTicks < targetTicks)
-                {
-                    spinWait.SpinOnce();
-                }
-            }
-            else
-            {
-                var sw = Stopwatch.StartNew();
-                while (sw.ElapsedTicks < targetTicks)
-                {
-                    spinWait.SpinOnce();
-                }
+                Thread.SpinWait(1);
             }
         }
 
@@ -216,7 +217,31 @@ namespace FNFNewBot
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error reading JSON file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Log($"Error reading JSON file: {ex.Message}", Color.Red);
+            }
+        }
+
+        private void Log(string message, Color? color = null)
+        {
+            if (logTextBox.InvokeRequired)
+            {
+                logTextBox.Invoke(new Action<string, Color?>(Log), message, color);
+            }
+            else
+            {
+                if (color.HasValue)
+                {
+                    logTextBox.SelectionStart = logTextBox.TextLength;
+                    logTextBox.SelectionLength = 0;
+                    logTextBox.SelectionColor = color.Value;
+                }
+
+                logTextBox.AppendText(message + Environment.NewLine);
+
+                if (color.HasValue)
+                {
+                    logTextBox.SelectionColor = logTextBox.ForeColor;
+                }
             }
         }
 
