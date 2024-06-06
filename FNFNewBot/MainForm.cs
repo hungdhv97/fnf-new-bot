@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace FNFNewBot
@@ -65,7 +66,6 @@ namespace FNFNewBot
                 int vkCode = Marshal.ReadInt32(lParam);
                 Keys key = (Keys)vkCode;
 
-
                 if (key == Keys.Escape)
                 {
                     Log($"{DateTime.Now:HH:mm:ss.fff}\tStop");
@@ -73,10 +73,15 @@ namespace FNFNewBot
                 else if (key == Keys.Enter)
                 {
                     Log($"{DateTime.Now:HH:mm:ss.fff}\tStart");
-                    ExecuteEasyNotesInParallel();
+                    ExecuteEasyNotesInParallelAsync();
                 }
             }
             return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
+        }
+
+        private async void ExecuteEasyNotesInParallelAsync()
+        {
+            await Task.Run(ExecuteEasyNotesInParallel);
         }
 
         private void ExecuteEasyNotesInParallel()
@@ -86,19 +91,15 @@ namespace FNFNewBot
                     .GroupBy(note => note.Direction)
                     .ToDictionary(g => g.Key, g => g.ToList());
 
-            List<Thread> threads = new List<Thread>();
+            List<Task> tasks = new List<Task>();
 
             foreach (var directionNotes in notesByDirection)
             {
-                Thread thread = new Thread(() => ExecuteNotes(directionNotes.Value));
-                threads.Add(thread);
-                thread.Start();
+                var notes = directionNotes.Value;
+                tasks.Add(Task.Run(() => ExecuteNotes(notes)));
             }
 
-            foreach (var thread in threads)
-            {
-                thread.Join();
-            }
+            Task.WhenAll(tasks).Wait();
         }
 
         private void ExecuteNotes(List<Note> notes)
