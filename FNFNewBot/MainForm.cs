@@ -63,7 +63,7 @@ namespace FNFNewBot
 
         private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode >= 0 && wParam == WM_KEYDOWN)
+            if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN)
             {
                 int vkCode = Marshal.ReadInt32(lParam);
                 Keys key = (Keys)vkCode;
@@ -89,14 +89,11 @@ namespace FNFNewBot
                 return;
             }
 
-            var selectedDifficulty = comboBoxDifficulty.SelectedItem?.ToString();
-            if (string.IsNullOrEmpty(selectedDifficulty))
-            {
-                Log($"{DateTime.Now:HH:mm:ss.fff}\tPlease select a difficulty", Color.Red);
-                return;
-            }
+            string selectedDifficulty = comboBoxDifficulty.SelectedItem != null
+                ? comboBoxDifficulty.SelectedItem.ToString()!
+                : "DefaultDifficulty";
 
-            var notes = GetNotesForDifficulty(selectedDifficulty);
+            List<Note> notes = GetNotesForDifficulty(selectedDifficulty);
             if (!notes.Any())
             {
                 Log($"{DateTime.Now:HH:mm:ss.fff}\tNo notes available for the selected difficulty", Color.Red);
@@ -164,7 +161,9 @@ namespace FNFNewBot
             string keyName = GetKeyName(direction);
             Color keyColor = GetKeyColor(direction);
 
-            Log($"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyName}{new string('\t', 4 - direction)}{length}", keyColor);
+            Log(
+                $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyName}{new string('\t', 4 - direction)}{length}",
+                keyColor);
 
             keybd_event(keyCode, 0, 0, 0);
 
@@ -224,7 +223,7 @@ namespace FNFNewBot
 
         private void buttonChooseFolder_Click(object sender, EventArgs e)
         {
-            using FolderBrowserDialog folderBrowserDialog = new();
+            using FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
             if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
             {
                 string selectedPath = folderBrowserDialog.SelectedPath;
