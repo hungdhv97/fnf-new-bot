@@ -10,7 +10,6 @@ namespace FNFNewBot
     public partial class MainForm : Form
     {
         private const long OneMillion = 1_000_000;
-
         private IntPtr _hookId = IntPtr.Zero;
         private LowLevelKeyboardProc _proc;
         private static List<Note> _easyNotes = new();
@@ -114,7 +113,6 @@ namespace FNFNewBot
             Log($"{DateTime.Now:HH:mm:ss.fff}\tStop");
         }
 
-
         private static List<Note> GetNotesForDifficulty(string difficulty)
         {
             return difficulty switch
@@ -126,7 +124,6 @@ namespace FNFNewBot
                 _ => new List<Note>()
             };
         }
-
 
         private void ExecuteNotesInParallel(List<Note> notes)
         {
@@ -163,36 +160,11 @@ namespace FNFNewBot
 
         private void PressKey(int direction, double? length)
         {
-            byte keyCode = direction switch
-            {
-                0 => (byte)Keys.Left,
-                1 => (byte)Keys.Up,
-                2 => (byte)Keys.Right,
-                3 => (byte)Keys.Down,
-                _ => 0
-            };
+            byte keyCode = GetKeyCode(direction);
+            string keyName = GetKeyName(direction);
+            Color keyColor = GetKeyColor(direction);
 
-            string keyName = direction switch
-            {
-                0 => "←",
-                1 => "↑",
-                2 => "→",
-                3 => "↓",
-                _ => string.Empty
-            };
-
-            Color keyColor = direction switch
-            {
-                0 => Color.Brown,
-                1 => Color.Green,
-                2 => Color.Blue,
-                3 => Color.Purple,
-                _ => Color.Black
-            };
-
-            Log(
-                $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyName}{new string('\t', 4 - direction)}{length}",
-                keyColor);
+            Log($"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyName}{new string('\t', 4 - direction)}{length}", keyColor);
 
             keybd_event(keyCode, 0, 0, 0);
 
@@ -202,6 +174,42 @@ namespace FNFNewBot
             }
 
             keybd_event(keyCode, 0, 2, 0);
+        }
+
+        private byte GetKeyCode(int direction)
+        {
+            return direction switch
+            {
+                0 => (byte)Keys.Left,
+                1 => (byte)Keys.Up,
+                2 => (byte)Keys.Right,
+                3 => (byte)Keys.Down,
+                _ => 0
+            };
+        }
+
+        private string GetKeyName(int direction)
+        {
+            return direction switch
+            {
+                0 => "←",
+                1 => "↑",
+                2 => "→",
+                3 => "↓",
+                _ => string.Empty
+            };
+        }
+
+        private Color GetKeyColor(int direction)
+        {
+            return direction switch
+            {
+                0 => Color.Brown,
+                1 => Color.Green,
+                2 => Color.Blue,
+                3 => Color.Purple,
+                _ => Color.Black
+            };
         }
 
         private void WaitForNanoseconds(Stopwatch stopwatch, long nanoseconds)
@@ -216,7 +224,7 @@ namespace FNFNewBot
 
         private void buttonChooseFolder_Click(object sender, EventArgs e)
         {
-            using FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+            using FolderBrowserDialog folderBrowserDialog = new();
             if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
             {
                 string selectedPath = folderBrowserDialog.SelectedPath;
@@ -230,8 +238,31 @@ namespace FNFNewBot
             treeViewJsonFiles.Nodes.Clear();
             DirectoryInfo rootDirectory = new DirectoryInfo(path);
             TreeNode rootNode = new TreeNode(rootDirectory.Name) { Tag = rootDirectory };
-            GetDirectories(rootDirectory.GetDirectories(), rootNode);
+            AddDirectoriesToTreeView(rootDirectory.GetDirectories(), rootNode);
             treeViewJsonFiles.Nodes.Add(rootNode);
+        }
+
+        private void AddDirectoriesToTreeView(DirectoryInfo[] subDirs, TreeNode nodeToAddTo)
+        {
+            foreach (DirectoryInfo subDir in subDirs)
+            {
+                TreeNode dirNode = new TreeNode(subDir.Name) { Tag = subDir };
+                AddFilesToTreeView(subDir.GetFiles("*.json"), dirNode);
+                AddDirectoriesToTreeView(subDir.GetDirectories(), dirNode);
+                nodeToAddTo.Nodes.Add(dirNode);
+            }
+        }
+
+        private void AddFilesToTreeView(FileInfo[] files, TreeNode node)
+        {
+            foreach (FileInfo file in files)
+            {
+                if (!file.Name.Contains("metadata", StringComparison.OrdinalIgnoreCase))
+                {
+                    TreeNode fileNode = new TreeNode(file.Name) { Tag = file.FullName };
+                    node.Nodes.Add(fileNode);
+                }
+            }
         }
 
         private void PopulateDifficultyComboBox(Difficulty notes)
@@ -244,31 +275,6 @@ namespace FNFNewBot
             if (comboBoxDifficulty.Items.Count > 0)
             {
                 comboBoxDifficulty.SelectedIndex = 0;
-            }
-        }
-
-        private void GetDirectories(DirectoryInfo[] subDirs, TreeNode nodeToAddTo)
-        {
-            foreach (DirectoryInfo subDir in subDirs)
-            {
-                TreeNode aNode = new TreeNode(subDir.Name, 0, 0) { Tag = subDir };
-                DirectoryInfo[] subSubDirs = subDir.GetDirectories();
-                FileInfo[] files = subDir.GetFiles("*.json");
-                foreach (FileInfo file in files)
-                {
-                    if (!file.Name.Contains("metadata", StringComparison.OrdinalIgnoreCase))
-                    {
-                        TreeNode fileNode = new TreeNode(file.Name) { Tag = file.FullName };
-                        aNode.Nodes.Add(fileNode);
-                    }
-                }
-
-                if (subSubDirs.Length != 0)
-                {
-                    GetDirectories(subSubDirs, aNode);
-                }
-
-                nodeToAddTo.Nodes.Add(aNode);
             }
         }
 
@@ -307,21 +313,26 @@ namespace FNFNewBot
             }
             else
             {
-                if (color.HasValue)
-                {
-                    logTextBox.SelectionStart = logTextBox.TextLength;
-                    logTextBox.SelectionLength = 0;
-                    logTextBox.SelectionColor = color.Value;
-                }
-
-                logTextBox.AppendText(message + Environment.NewLine);
-                if (color.HasValue)
-                {
-                    logTextBox.SelectionColor = logTextBox.ForeColor;
-                }
-
-                logTextBox.ScrollToCaret();
+                AppendLogMessage(message, color);
             }
+        }
+
+        private void AppendLogMessage(string message, Color? color)
+        {
+            if (color.HasValue)
+            {
+                logTextBox.SelectionStart = logTextBox.TextLength;
+                logTextBox.SelectionLength = 0;
+                logTextBox.SelectionColor = color.Value;
+            }
+
+            logTextBox.AppendText(message + Environment.NewLine);
+            if (color.HasValue)
+            {
+                logTextBox.SelectionColor = logTextBox.ForeColor;
+            }
+
+            logTextBox.ScrollToCaret();
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
