@@ -16,7 +16,7 @@ namespace FNFNewBot
         private static List<Note> _normalNotes = new();
         private static List<Note> _hardNotes = new();
         private static List<Note> _erectNotes = new();
-        private static List<string> _keyMap = ["left", "down", "up", "right"];
+        private static List<KeyType> _keyMap = [KeyType.Left, KeyType.Down, KeyType.Up, KeyType.Right];
         private Stopwatch _stopwatch;
         private bool _isExecuting;
         private bool _isClosing;
@@ -30,6 +30,7 @@ namespace FNFNewBot
         {
             _proc = HookCallback;
             _hookId = SetHook(_proc);
+            SetupAutoComplete();
         }
 
         private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
@@ -92,7 +93,7 @@ namespace FNFNewBot
 
             string selectedDifficulty = comboBoxDifficulty.SelectedItem != null
                 ? comboBoxDifficulty.SelectedItem.ToString()!
-                : "DefaultDifficulty";
+                : "Easy";
 
             List<Note> notes = GetNotesForDifficulty(selectedDifficulty);
             if (!notes.Any())
@@ -161,7 +162,7 @@ namespace FNFNewBot
             int direction = note.Direction;
             double? length = note.Length;
 
-            KeyType keyType = KeyType.FromString(_keyMap[note.Direction]);
+            KeyType keyType = _keyMap[note.Direction];
 
             Log(
                 $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', 4 - direction)}{length}",
@@ -304,6 +305,32 @@ namespace FNFNewBot
         {
             _isClosing = true;
             UnhookWindowsHookEx(_hookId);
+        }
+
+        private void SetupAutoComplete()
+        {
+            textBoxKeyMap.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+            textBoxKeyMap.AutoCompleteSource = AutoCompleteSource.CustomSource;
+            AutoCompleteStringCollection keyMapSuggestions = ["left_down_up_right", "a_s_d_f"];
+            textBoxKeyMap.AutoCompleteCustomSource = keyMapSuggestions;
+        }
+        private void buttonChangeKeyMap_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string input = textBoxKeyMap.Text;
+                string[] keys = input.Split('_');
+                _keyMap.Clear();
+                foreach (var key in keys)
+                {
+                    _keyMap.Add(KeyType.FromString(key));
+                }
+                Log("KeyMap: " + string.Join(", ", _keyMap.Select(k => k.Name)));
+            }
+            catch (ArgumentException ex)
+            {
+                Log("Error: " + ex.Message);
+            }
         }
     }
 }

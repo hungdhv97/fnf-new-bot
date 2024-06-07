@@ -40,6 +40,7 @@
             nUDSalt = new NumericUpDown();
             nUDWaiting = new NumericUpDown();
             label4 = new Label();
+            buttonChangeKeyMap = new Button();
             ((System.ComponentModel.ISupportInitialize)nUDSalt).BeginInit();
             ((System.ComponentModel.ISupportInitialize)nUDWaiting).BeginInit();
             SuspendLayout();
@@ -64,17 +65,17 @@
             // 
             // treeViewJsonFiles
             // 
-            treeViewJsonFiles.Location = new Point(12, 163);
+            treeViewJsonFiles.Location = new Point(12, 131);
             treeViewJsonFiles.Name = "treeViewJsonFiles";
-            treeViewJsonFiles.Size = new Size(346, 275);
+            treeViewJsonFiles.Size = new Size(406, 307);
             treeViewJsonFiles.TabIndex = 2;
             treeViewJsonFiles.NodeMouseDoubleClick += treeViewJsonFiles_NodeMouseDoubleClick;
             // 
             // logTextBox
             // 
-            logTextBox.Location = new Point(364, 43);
+            logTextBox.Location = new Point(424, 43);
             logTextBox.Name = "logTextBox";
-            logTextBox.Size = new Size(424, 395);
+            logTextBox.Size = new Size(364, 395);
             logTextBox.TabIndex = 3;
             logTextBox.Text = "";
             // 
@@ -83,15 +84,16 @@
             comboBoxDifficulty.FormattingEnabled = true;
             comboBoxDifficulty.Location = new Point(96, 43);
             comboBoxDifficulty.Name = "comboBoxDifficulty";
-            comboBoxDifficulty.Size = new Size(262, 23);
+            comboBoxDifficulty.Size = new Size(322, 23);
             comboBoxDifficulty.TabIndex = 4;
             // 
             // textBoxKeyMap
             // 
             textBoxKeyMap.Location = new Point(96, 72);
             textBoxKeyMap.Name = "textBoxKeyMap";
-            textBoxKeyMap.Size = new Size(262, 23);
+            textBoxKeyMap.Size = new Size(208, 23);
             textBoxKeyMap.TabIndex = 5;
+            textBoxKeyMap.Text = "left_down_up_right";
             // 
             // label1
             // 
@@ -127,34 +129,45 @@
             nUDSalt.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
             nUDSalt.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
             nUDSalt.Name = "nUDSalt";
-            nUDSalt.Size = new Size(262, 23);
+            nUDSalt.Size = new Size(115, 23);
             nUDSalt.TabIndex = 10;
             nUDSalt.TextAlign = HorizontalAlignment.Center;
             // 
             // nUDWaiting
             // 
             nUDWaiting.Increment = new decimal(new int[] { 100, 0, 0, 0 });
-            nUDWaiting.Location = new Point(96, 131);
+            nUDWaiting.Location = new Point(303, 102);
             nUDWaiting.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
             nUDWaiting.Name = "nUDWaiting";
-            nUDWaiting.Size = new Size(262, 23);
+            nUDWaiting.Size = new Size(115, 23);
             nUDWaiting.TabIndex = 12;
             nUDWaiting.TextAlign = HorizontalAlignment.Center;
             // 
             // label4
             // 
             label4.AutoSize = true;
-            label4.Location = new Point(12, 133);
+            label4.Location = new Point(231, 104);
             label4.Name = "label4";
             label4.Size = new Size(48, 15);
             label4.TabIndex = 11;
             label4.Text = "Waiting";
+            // 
+            // buttonChangeKeyMap
+            // 
+            buttonChangeKeyMap.Location = new Point(310, 71);
+            buttonChangeKeyMap.Name = "buttonChangeKeyMap";
+            buttonChangeKeyMap.Size = new Size(108, 23);
+            buttonChangeKeyMap.TabIndex = 13;
+            buttonChangeKeyMap.Text = "Change Key Map";
+            buttonChangeKeyMap.UseVisualStyleBackColor = true;
+            buttonChangeKeyMap.Click += buttonChangeKeyMap_Click;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
+            Controls.Add(buttonChangeKeyMap);
             Controls.Add(nUDWaiting);
             Controls.Add(label4);
             Controls.Add(nUDSalt);
@@ -191,5 +204,6 @@
         private NumericUpDown nUDSalt;
         private NumericUpDown nUDWaiting;
         private Label label4;
+        private Button buttonChangeKeyMap;
     }
 }

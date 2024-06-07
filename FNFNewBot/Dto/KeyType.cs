@@ -2,10 +2,10 @@ namespace FNFNewBot.Dto;
 
 public class KeyType
 {
-    private static readonly KeyType Left = new(Keys.Left, "←", Color.Blue);
-    private static readonly KeyType Down = new(Keys.Down, "↓", Color.Green);
-    private static readonly KeyType Up = new(Keys.Up, "↑", Color.Brown);
-    private static readonly KeyType Right = new(Keys.Right, "→", Color.Purple);
+    public static readonly KeyType Left = new(Keys.Left, "←", Color.Blue);
+    public static readonly KeyType Down = new(Keys.Down, "↓", Color.Green);
+    public static readonly KeyType Up = new(Keys.Up, "↑", Color.Brown);
+    public static readonly KeyType Right = new(Keys.Right, "→", Color.Purple);
 
     public byte Code { get; private set; }
     public string Name { get; private set; }
@@ -26,7 +26,7 @@ public class KeyType
             "down" => Down,
             "up" => Up,
             "right" => Right,
-            _ => throw new ArgumentException("Invalid note type", nameof(name)),
+            _ => throw new ArgumentException($"Invalid key {name}"),
         };
     }
 }
