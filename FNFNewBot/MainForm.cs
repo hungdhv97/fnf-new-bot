@@ -21,7 +21,6 @@ namespace FNFNewBot
         private bool _isExecuting;
         private bool _isClosing;
         private static int _salt;
-        private static int _waiting;
 
         public MainForm()
         {
@@ -34,7 +33,6 @@ namespace FNFNewBot
             _hookId = SetHook(_proc);
 
             _salt = (int)nUDSalt.Value;
-            _waiting = (int)nUDWaiting.Value;
             SetupAutoComplete();
         }
 
@@ -77,9 +75,9 @@ namespace FNFNewBot
 
                 if (key == Keys.Escape)
                 {
-                    _isClosing = true;
+                    _isClosing = true && _isExecuting;
                 }
-                else if (key == Keys.Enter)
+                else if (key == Keys.X)
                 {
                     ExecuteNotesInParallelAsync();
                 }
@@ -114,9 +112,13 @@ namespace FNFNewBot
                 return;
             }
 
-            string selectedDifficulty = comboBoxDifficulty.SelectedItem != null
-                ? comboBoxDifficulty.SelectedItem.ToString()!
-                : "Easy";
+            if (comboBoxDifficulty.SelectedItem == null)
+            {
+                Log($"{DateTime.Now:HH:mm:ss.fff}\tPlease choose chart");
+                return;
+            }
+
+            string selectedDifficulty = comboBoxDifficulty.SelectedItem.ToString()!;
 
             List<Note> notes = GetNotesForDifficulty(selectedDifficulty);
             if (!notes.Any())
@@ -125,11 +127,7 @@ namespace FNFNewBot
                 return;
             }
 
-            Log($"Waiting for {_waiting} ms");
-
-            await Task.Delay(_waiting);
-
-            Log($"{DateTime.Now:HH:mm:ss.fff}\tStart");
+            Log($"{DateTime.Now:HH:mm:ss.fff}\tMode {selectedDifficulty} Start");
 
             _isExecuting = true;
             await Task.Run(() => ExecuteNotesInParallel(notes));
@@ -203,7 +201,7 @@ namespace FNFNewBot
             }
             else
             {
-                WaitForNanoseconds(Stopwatch.StartNew(), 100 * OneMillion);
+                WaitForNanoseconds(Stopwatch.StartNew(), 10 * OneMillion);
             }
 
             keybd_event(keyType.Code, 0, 2, 0);
@@ -279,6 +277,9 @@ namespace FNFNewBot
         {
             if (e.Node.Tag is string filePath && filePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
             {
+                string fileName = Path.GetFileNameWithoutExtension(filePath);
+                Log($"{DateTime.Now:HH:mm:ss.fff}\tSelected chart: {fileName}");
+
                 ReadJsonFile(filePath);
             }
         }
@@ -342,7 +343,7 @@ namespace FNFNewBot
         {
             textBoxKeyMap.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
             textBoxKeyMap.AutoCompleteSource = AutoCompleteSource.CustomSource;
-            AutoCompleteStringCollection keyMapSuggestions = ["left_down_up_right", "a_s_d_f"];
+            AutoCompleteStringCollection keyMapSuggestions = ["left_down_up_right", "a_s_d_f", "a_s_d_f_space_left_down_up_right"];
             textBoxKeyMap.AutoCompleteCustomSource = keyMapSuggestions;
         }
         private void buttonChangeKeyMap_Click(object sender, EventArgs e)
@@ -368,12 +369,6 @@ namespace FNFNewBot
         {
             _salt = (int)nUDSalt.Value;
             Log($"Salt: {_salt} ms");
-        }
-
-        private void nUDWaiting_ValueChanged(object sender, EventArgs e)
-        {
-            _waiting = (int)nUDWaiting.Value;
-            Log($"Waiting: {_waiting} ms");
         }
     }
 }
