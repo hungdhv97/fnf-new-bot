@@ -16,6 +16,7 @@ namespace FNFNewBot
         private static List<Note> _normalNotes = new();
         private static List<Note> _hardNotes = new();
         private static List<Note> _erectNotes = new();
+        private static List<string> _keyMap = ["left", "down", "up", "right"];
         private Stopwatch _stopwatch;
         private bool _isExecuting;
         private bool _isClosing;
@@ -160,22 +161,20 @@ namespace FNFNewBot
             int direction = note.Direction;
             double? length = note.Length;
 
-            byte keyCode = note.GetKeyCode();
-            string keyName = note.GetKeyName();
-            Color color = note.GetColor();
+            KeyType keyType = KeyType.FromString(_keyMap[note.Direction]);
 
             Log(
-                $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyName}{new string('\t', 4 - direction)}{length}",
-                color);
+                $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', 4 - direction)}{length}",
+                keyType.Color);
 
-            keybd_event(keyCode, 0, 0, 0);
+            keybd_event(keyType.Code, 0, 0, 0);
 
             if (length is > 0)
             {
                 WaitForNanoseconds(Stopwatch.StartNew(), (long)(length.Value * OneMillion));
             }
 
-            keybd_event(keyCode, 0, 2, 0);
+            keybd_event(keyType.Code, 0, 2, 0);
         }
 
         private void WaitForNanoseconds(Stopwatch stopwatch, long nanoseconds)
