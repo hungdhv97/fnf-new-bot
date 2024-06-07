@@ -10,17 +10,16 @@ namespace FNFNewBot
     public partial class MainForm : Form
     {
         private const long OneMillion = 1_000_000;
-        private const long OneBillion = 1_000_000_000;
 
-        private IntPtr hookId = IntPtr.Zero;
-        private LowLevelKeyboardProc proc;
-        private static List<Note> easyNotes = new List<Note>();
-        private static List<Note> normalNotes = new List<Note>();
-        private static List<Note> hardNotes = new List<Note>();
-        private static List<Note> erectNotes = new List<Note>();
-        private Stopwatch stopwatch;
-        private bool isExecuting = false;
-        private bool isClosing = false;
+        private IntPtr _hookId = IntPtr.Zero;
+        private LowLevelKeyboardProc _proc;
+        private static List<Note> _easyNotes = new();
+        private static List<Note> _normalNotes = new();
+        private static List<Note> _hardNotes = new();
+        private static List<Note> _erectNotes = new();
+        private Stopwatch _stopwatch;
+        private bool _isExecuting;
+        private bool _isClosing;
 
         public MainForm()
         {
@@ -29,17 +28,19 @@ namespace FNFNewBot
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            proc = HookCallback;
-            hookId = SetHook(proc);
+            _proc = HookCallback;
+            _hookId = SetHook(_proc);
         }
 
         private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
+
         private const int WH_KEYBOARD_LL = 13;
         private const int WM_KEYDOWN = 0x0100;
         private const int WM_KEYUP = 0x0101;
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod,
+            uint dwThreadId);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -56,35 +57,34 @@ namespace FNFNewBot
 
         private static IntPtr SetHook(LowLevelKeyboardProc proc)
         {
-            using (Process curProcess = Process.GetCurrentProcess())
-            using (ProcessModule curModule = curProcess.MainModule)
-            {
-                return SetWindowsHookEx(WH_KEYBOARD_LL, proc, GetModuleHandle(curModule.ModuleName), 0);
-            }
+            using Process curProcess = Process.GetCurrentProcess();
+            using ProcessModule curModule = curProcess.MainModule!;
+            return SetWindowsHookEx(WH_KEYBOARD_LL, proc, GetModuleHandle(curModule.ModuleName), 0);
         }
 
         private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN)
+            if (nCode >= 0 && wParam == WM_KEYDOWN)
             {
                 int vkCode = Marshal.ReadInt32(lParam);
                 Keys key = (Keys)vkCode;
 
                 if (key == Keys.Escape)
                 {
-                    isClosing = true;
+                    _isClosing = true;
                 }
                 else if (key == Keys.Enter)
                 {
                     ExecuteNotesInParallelAsync();
                 }
             }
+
             return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
         }
 
         private async void ExecuteNotesInParallelAsync()
         {
-            if (isExecuting)
+            if (_isExecuting)
             {
                 Log($"{DateTime.Now:HH:mm:ss.fff}\tRunning");
                 return;
@@ -106,23 +106,23 @@ namespace FNFNewBot
 
             Log($"{DateTime.Now:HH:mm:ss.fff}\tStart");
 
-            isExecuting = true;
+            _isExecuting = true;
             await Task.Run(() => ExecuteNotesInParallel(notes));
-            isExecuting = false;
-            isClosing = false;
+            _isExecuting = false;
+            _isClosing = false;
 
             Log($"{DateTime.Now:HH:mm:ss.fff}\tStop");
         }
 
 
-        private List<Note> GetNotesForDifficulty(string difficulty)
+        private static List<Note> GetNotesForDifficulty(string difficulty)
         {
             return difficulty switch
             {
-                "Easy" => easyNotes,
-                "Normal" => normalNotes,
-                "Hard" => hardNotes,
-                "Erect" => erectNotes,
+                "Easy" => _easyNotes,
+                "Normal" => _normalNotes,
+                "Hard" => _hardNotes,
+                "Erect" => _erectNotes,
                 _ => new List<Note>()
             };
         }
@@ -131,18 +131,15 @@ namespace FNFNewBot
         private void ExecuteNotesInParallel(List<Note> notes)
         {
             var notesByDirection = notes
-                .Where(note => note.Direction >= 0 && note.Direction <= 3)
+                .Where(note => note.Direction is >= 0 and <= 3)
                 .GroupBy(note => note.Direction)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
-            List<Task> tasks = new List<Task>();
+            List<Task> tasks = notesByDirection
+                .Select(directionNotes => Task.Run(() => ExecuteNotes(directionNotes.Value)))
+                .ToList();
 
-            foreach (var directionNotes in notesByDirection)
-            {
-                var directionNoteList = directionNotes.Value;
-                tasks.Add(Task.Run(() => ExecuteNotes(directionNoteList)));
-            }
-            stopwatch = Stopwatch.StartNew();
+            _stopwatch = Stopwatch.StartNew();
             try
             {
                 Task.WhenAll(tasks).Wait();
@@ -155,11 +152,11 @@ namespace FNFNewBot
 
         private void ExecuteNotes(List<Note> notes)
         {
-            foreach (var note in notes)
+            foreach (Note note in notes)
             {
                 long targetTimeNanoseconds = (long)(note.Time * OneMillion);
-                WaitForNanoseconds(stopwatch, targetTimeNanoseconds);
-                if (isClosing) break;
+                WaitForNanoseconds(_stopwatch, targetTimeNanoseconds);
+                if (_isClosing) break;
                 PressKey(note.Direction, note.Length);
             }
         }
@@ -172,7 +169,7 @@ namespace FNFNewBot
                 1 => (byte)Keys.Up,
                 2 => (byte)Keys.Right,
                 3 => (byte)Keys.Down,
-                _ => (byte)0
+                _ => 0
             };
 
             string keyName = direction switch
@@ -193,11 +190,13 @@ namespace FNFNewBot
                 _ => Color.Black
             };
 
-            Log($"{stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyName}{new string('\t', 4 - direction)}{length}", keyColor);
+            Log(
+                $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyName}{new string('\t', 4 - direction)}{length}",
+                keyColor);
 
             keybd_event(keyCode, 0, 0, 0);
 
-            if (length.HasValue && length.Value > 0)
+            if (length is > 0)
             {
                 WaitForNanoseconds(Stopwatch.StartNew(), (long)(length.Value * OneMillion));
             }
@@ -210,21 +209,19 @@ namespace FNFNewBot
             long targetTicks = (long)(nanoseconds * 0.01);
             while (stopwatch.ElapsedTicks < targetTicks)
             {
-                if (isClosing) break;
+                if (_isClosing) break;
                 Thread.SpinWait(1);
             }
         }
 
         private void buttonChooseFolder_Click(object sender, EventArgs e)
         {
-            using (FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog())
+            using FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+            if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
             {
-                if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
-                {
-                    string selectedPath = folderBrowserDialog.SelectedPath;
-                    textBoxFolder.Text = selectedPath;
-                    PopulateTreeView(selectedPath);
-                }
+                string selectedPath = folderBrowserDialog.SelectedPath;
+                textBoxFolder.Text = selectedPath;
+                PopulateTreeView(selectedPath);
             }
         }
 
@@ -265,10 +262,12 @@ namespace FNFNewBot
                         aNode.Nodes.Add(fileNode);
                     }
                 }
+
                 if (subSubDirs.Length != 0)
                 {
                     GetDirectories(subSubDirs, aNode);
                 }
+
                 nodeToAddTo.Nodes.Add(aNode);
             }
         }
@@ -286,11 +285,12 @@ namespace FNFNewBot
             try
             {
                 string jsonContent = File.ReadAllText(filePath);
-                Song song = JsonConvert.DeserializeObject<Song>(jsonContent);
-                easyNotes = song.Notes.Easy;
-                normalNotes = song.Notes.Normal;
-                hardNotes = song.Notes.Hard;
-                erectNotes = song.Notes.Erect;
+                Song? song = JsonConvert.DeserializeObject<Song>(jsonContent);
+                if (song == null) return;
+                _easyNotes = song.Notes.Easy;
+                _normalNotes = song.Notes.Normal;
+                _hardNotes = song.Notes.Hard;
+                _erectNotes = song.Notes.Erect;
                 PopulateDifficultyComboBox(song.Notes);
             }
             catch (Exception ex)
@@ -313,19 +313,21 @@ namespace FNFNewBot
                     logTextBox.SelectionLength = 0;
                     logTextBox.SelectionColor = color.Value;
                 }
+
                 logTextBox.AppendText(message + Environment.NewLine);
                 if (color.HasValue)
                 {
                     logTextBox.SelectionColor = logTextBox.ForeColor;
                 }
+
                 logTextBox.ScrollToCaret();
             }
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            isClosing = true;
-            UnhookWindowsHookEx(hookId);
+            _isClosing = true;
+            UnhookWindowsHookEx(_hookId);
         }
     }
 }
