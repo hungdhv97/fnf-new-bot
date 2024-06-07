@@ -20,6 +20,8 @@ namespace FNFNewBot
         private Stopwatch _stopwatch;
         private bool _isExecuting;
         private bool _isClosing;
+        private static int _salt;
+        private static int _waiting;
 
         public MainForm()
         {
@@ -30,6 +32,9 @@ namespace FNFNewBot
         {
             _proc = HookCallback;
             _hookId = SetHook(_proc);
+
+            _salt = (int)nUDSalt.Value;
+            _waiting = (int)nUDWaiting.Value;
             SetupAutoComplete();
         }
 
@@ -78,9 +83,27 @@ namespace FNFNewBot
                 {
                     ExecuteNotesInParallelAsync();
                 }
+                else if (key == Keys.Oemplus)
+                {
+                    IncrementSalt();
+                }
+                else if (key == Keys.OemMinus)
+                {
+                    DecrementSalt();
+                }
             }
 
             return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
+        }
+
+        private void IncrementSalt()
+        {
+            if (nUDSalt.Value < nUDSalt.Maximum) nUDSalt.Value += (int)nUDSalt.Increment;
+        }
+
+        private void DecrementSalt()
+        {
+            if (nUDSalt.Value > nUDSalt.Minimum) nUDSalt.Value -= (int)nUDSalt.Increment;
         }
 
         private async void ExecuteNotesInParallelAsync()
@@ -101,6 +124,10 @@ namespace FNFNewBot
                 Log($"{DateTime.Now:HH:mm:ss.fff}\tNo notes available for the selected difficulty", Color.Red);
                 return;
             }
+
+            Log($"Waiting for {_waiting} ms");
+
+            await Task.Delay(_waiting);
 
             Log($"{DateTime.Now:HH:mm:ss.fff}\tStart");
 
@@ -174,6 +201,10 @@ namespace FNFNewBot
             {
                 WaitForNanoseconds(Stopwatch.StartNew(), (long)(length.Value * OneMillion));
             }
+            else
+            {
+                WaitForNanoseconds(Stopwatch.StartNew(), 100 * OneMillion);
+            }
 
             keybd_event(keyType.Code, 0, 2, 0);
         }
@@ -181,7 +212,7 @@ namespace FNFNewBot
         private void WaitForNanoseconds(Stopwatch stopwatch, long nanoseconds)
         {
             long targetTicks = (long)(nanoseconds * 0.01);
-            while (stopwatch.ElapsedTicks < targetTicks)
+            while (stopwatch.ElapsedTicks < targetTicks + _salt * 10_000)
             {
                 if (_isClosing) break;
                 Thread.SpinWait(1);
@@ -331,6 +362,18 @@ namespace FNFNewBot
             {
                 Log("Error: " + ex.Message);
             }
+        }
+
+        private void nUDSalt_ValueChanged(object sender, EventArgs e)
+        {
+            _salt = (int)nUDSalt.Value;
+            Log($"Salt: {_salt} ms");
+        }
+
+        private void nUDWaiting_ValueChanged(object sender, EventArgs e)
+        {
+            _waiting = (int)nUDWaiting.Value;
+            Log($"Waiting: {_waiting} ms");
         }
     }
 }

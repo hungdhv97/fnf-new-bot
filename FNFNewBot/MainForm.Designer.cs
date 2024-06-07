@@ -124,7 +124,7 @@
             // 
             // nUDSalt
             // 
-            nUDSalt.Increment = new decimal(new int[] { 50, 0, 0, 0 });
+            nUDSalt.Increment = new decimal(new int[] { 10, 0, 0, 0 });
             nUDSalt.Location = new Point(96, 102);
             nUDSalt.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
             nUDSalt.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
@@ -132,16 +132,19 @@
             nUDSalt.Size = new Size(115, 23);
             nUDSalt.TabIndex = 10;
             nUDSalt.TextAlign = HorizontalAlignment.Center;
+            nUDSalt.ValueChanged += nUDSalt_ValueChanged;
             // 
             // nUDWaiting
             // 
             nUDWaiting.Increment = new decimal(new int[] { 100, 0, 0, 0 });
             nUDWaiting.Location = new Point(303, 102);
-            nUDWaiting.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
+            nUDWaiting.Maximum = new decimal(new int[] { 20000, 0, 0, 0 });
             nUDWaiting.Name = "nUDWaiting";
             nUDWaiting.Size = new Size(115, 23);
             nUDWaiting.TabIndex = 12;
             nUDWaiting.TextAlign = HorizontalAlignment.Center;
+            nUDWaiting.Value = new decimal(new int[] { 4500, 0, 0, 0 });
+            nUDWaiting.ValueChanged += nUDWaiting_ValueChanged;
             // 
             // label4
             // 

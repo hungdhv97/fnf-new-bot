@@ -6,6 +6,10 @@ public class KeyType
     public static readonly KeyType Down = new(Keys.Down, "↓", Color.Green);
     public static readonly KeyType Up = new(Keys.Up, "↑", Color.Brown);
     public static readonly KeyType Right = new(Keys.Right, "→", Color.Purple);
+    public static readonly KeyType A = new(Keys.A, "a", Color.AliceBlue);
+    public static readonly KeyType S = new(Keys.S, "s", Color.SaddleBrown);
+    public static readonly KeyType D = new(Keys.D, "d", Color.DarkBlue);
+    public static readonly KeyType F = new(Keys.F, "f", Color.Firebrick);
 
     public byte Code { get; private set; }
     public string Name { get; private set; }
@@ -26,6 +30,10 @@ public class KeyType
             "down" => Down,
             "up" => Up,
             "right" => Right,
+            "a" => A,
+            "s" => S,
+            "d" => D,
+            "f" => F,
             _ => throw new ArgumentException($"Invalid key {name}"),
         };
     }
