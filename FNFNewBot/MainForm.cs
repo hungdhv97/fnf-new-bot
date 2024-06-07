@@ -1,4 +1,4 @@
-﻿using FNFNewBot.DTO;
+﻿using FNFNewBot.Dto;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -151,19 +151,22 @@ namespace FNFNewBot
                 long targetTimeNanoseconds = (long)(note.Time * OneMillion);
                 WaitForNanoseconds(_stopwatch, targetTimeNanoseconds);
                 if (_isClosing) break;
-                PressKey(note.Direction, note.Length);
+                PressKey(note);
             }
         }
 
-        private void PressKey(int direction, double? length)
+        private void PressKey(Note note)
         {
-            byte keyCode = GetKeyCode(direction);
-            string keyName = GetKeyName(direction);
-            Color keyColor = GetKeyColor(direction);
+            int direction = note.Direction;
+            double? length = note.Length;
+
+            byte keyCode = note.GetKeyCode();
+            string keyName = note.GetKeyName();
+            Color color = note.GetColor();
 
             Log(
                 $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyName}{new string('\t', 4 - direction)}{length}",
-                keyColor);
+                color);
 
             keybd_event(keyCode, 0, 0, 0);
 
@@ -173,42 +176,6 @@ namespace FNFNewBot
             }
 
             keybd_event(keyCode, 0, 2, 0);
-        }
-
-        private byte GetKeyCode(int direction)
-        {
-            return direction switch
-            {
-                0 => (byte)Keys.Left,
-                1 => (byte)Keys.Up,
-                2 => (byte)Keys.Right,
-                3 => (byte)Keys.Down,
-                _ => 0
-            };
-        }
-
-        private string GetKeyName(int direction)
-        {
-            return direction switch
-            {
-                0 => "←",
-                1 => "↑",
-                2 => "→",
-                3 => "↓",
-                _ => string.Empty
-            };
-        }
-
-        private Color GetKeyColor(int direction)
-        {
-            return direction switch
-            {
-                0 => Color.Brown,
-                1 => Color.Green,
-                2 => Color.Blue,
-                3 => Color.Purple,
-                _ => Color.Black
-            };
         }
 
         private void WaitForNanoseconds(Stopwatch stopwatch, long nanoseconds)
