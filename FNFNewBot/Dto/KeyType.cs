@@ -10,7 +10,11 @@ public class KeyType
     public static readonly KeyType S = new(Keys.S, "s", Color.SaddleBrown);
     public static readonly KeyType D = new(Keys.D, "d", Color.DarkBlue);
     public static readonly KeyType F = new(Keys.F, "f", Color.Firebrick);
-    public static readonly KeyType Space = new(Keys.Space, "space", Color.Firebrick);
+    public static readonly KeyType H = new(Keys.A, "h", Color.DarkGray);
+    public static readonly KeyType J = new(Keys.S, "j", Color.DarkGreen);
+    public static readonly KeyType K = new(Keys.D, "k", Color.DarkMagenta);
+    public static readonly KeyType L = new(Keys.F, "l", Color.DarkOliveGreen);
+    public static readonly KeyType Space = new(Keys.Space, "space", Color.DarkOrange);
 
     public byte Code { get; private set; }
     public string Name { get; private set; }
@@ -35,6 +39,10 @@ public class KeyType
             "s" => S,
             "d" => D,
             "f" => F,
+            "h" => H,
+            "j" => J,
+            "k" => K,
+            "l" => L,
             "space" => Space,
             _ => throw new ArgumentException($"Invalid key {name}"),
         };

@@ -138,7 +138,6 @@ namespace FNFNewBot
         private void ExecuteNotesInParallel(List<NoteInfo> notes)
         {
             var notesByDirection = notes
-                .Where(note => note.Direction is >= 0 and <= 3)
                 .GroupBy(note => note.Direction)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
@@ -176,7 +175,7 @@ namespace FNFNewBot
             KeyType keyType = note.KeyType;
 
             Log(
-                $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', 4 - direction)}{length}",
+                $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{length}",
                 keyType.Color);
 
             keybd_event(keyType.Code, 0, 0, 0);
@@ -187,7 +186,7 @@ namespace FNFNewBot
             }
             else
             {
-                WaitForNanoseconds(Stopwatch.StartNew(), 10 * OneMillion);
+                WaitForNanoseconds(Stopwatch.StartNew(), 50 * OneMillion);
             }
 
             keybd_event(keyType.Code, 0, 2, 0);
@@ -393,7 +392,10 @@ namespace FNFNewBot
             {
                 "left_down_up_right",
                 "a_s_d_f",
-                "a_s_d_f_space_left_down_up_right"
+                "a_s_w_d",
+                "a_s_d_f_space_left_down_up_right",
+                "a_s_d_f_space_h_j_k_l",
+                "a_s_d_f_space_left_down_up_right",
             };
             textBoxKeyMap.AutoCompleteCustomSource = keyMapSuggestions;
         }
