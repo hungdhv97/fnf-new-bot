@@ -19,6 +19,7 @@ namespace FNFNewBot
         private SongInfo _currentSongInfo;
         private Song1? _currentSong1;
         private Song2? _currentSong2;
+        private Song3? _currentSong3;
         private string _selectedDifficulty;
 
         public MainForm()
@@ -314,6 +315,18 @@ namespace FNFNewBot
                     }
                 }
 
+                if (IsValidSong3(jsonContent))
+                {
+                    var song3 = JsonConvert.DeserializeObject<Song3>(jsonContent);
+                    if (song3 != null)
+                    {
+                        _currentSong3 = song3;
+                        _currentSongInfo = SongInfo.From(GetGrandparentFolderName(filePath), _currentSong3, _keyTypes);
+                        PopulateDifficultyComboBox(_currentSongInfo.Sections);
+                        return;
+                    }
+                }
+
                 Log($"Error reading JSON file: Unknown format", Color.Red);
             }
             catch (Exception ex)
@@ -346,6 +359,25 @@ namespace FNFNewBot
             {
                 return false;
             }
+        }
+
+        private bool IsValidSong3(string jsonContent)
+        {
+            try
+            {
+                var jsonObject = JsonConvert.DeserializeObject<JObject>(jsonContent);
+                return jsonObject.ContainsKey("strumLines");
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private string GetGrandparentFolderName(string filePath)
+        {
+            DirectoryInfo directory = Directory.GetParent(filePath).Parent;
+            return directory != null ? directory.Name : Path.GetFileNameWithoutExtension(filePath);
         }
 
         private void Log(string message, Color? color = null)
@@ -431,8 +463,9 @@ namespace FNFNewBot
 
             _currentSongInfo = _currentSongInfo.Version switch
             {
-                2 when _currentSong2 != null => SongInfo.From(_currentSongInfo.Name, _currentSong2, _keyTypes),
                 1 when _currentSong1 != null => SongInfo.From(_currentSongInfo.Name, _currentSong1, _keyTypes),
+                2 when _currentSong2 != null => SongInfo.From(_currentSongInfo.Name, _currentSong2, _keyTypes),
+                3 when _currentSong3 != null => SongInfo.From(_currentSongInfo.Name, _currentSong3, _keyTypes),
                 _ => _currentSongInfo
             };
         }

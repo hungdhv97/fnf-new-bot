@@ -36,6 +36,17 @@
                 KeyType = keyType
             };
         }
+
+        public static NoteInfo From(Note3 note, KeyType keyType)
+        {
+            return new NoteInfo
+            {
+                Direction = note.Id,
+                Time = note.Time,
+                Length = note.SLen,
+                KeyType = keyType
+            };
+        }
     }
 
     public class NoteSection
@@ -69,6 +80,18 @@
                     .Select(noteData => NoteInfo.From(noteData.ToArray(), keyTypes[(int)noteData[1]]))
                     .ToList(),
                 Mode = mode
+            };
+        }
+
+        public static NoteSection From(List<Note3> notes, List<KeyType> keyTypes)
+        {
+            return new NoteSection
+            {
+                Notes = notes
+                    .Where(note => note.Id < keyTypes.Count)
+                    .Select(note => NoteInfo.From(note, keyTypes[note.Id]))
+                    .ToList(),
+                Mode = DifficultyMode.Hard
             };
         }
     }
@@ -112,6 +135,20 @@
                 {
                     NoteSection.From(song.Song.Notes, mode, keyTypes)
                 }
+            };
+        }
+
+        public static SongInfo From(string name, Song3 song, List<KeyType> keyTypes)
+        {
+            StrumLine3? firstFilteredStrumLine = song.StrumLines.FirstOrDefault(sl => sl.Type == 1);
+
+            return new SongInfo
+            {
+                Version = 3,
+                Name = name,
+                Sections = firstFilteredStrumLine != null
+                    ? new List<NoteSection> { NoteSection.From(firstFilteredStrumLine.Notes, keyTypes) }
+                    : new List<NoteSection>()
             };
         }
     }
