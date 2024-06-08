@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-
 namespace FNFNewBot
 {
     public partial class MainForm : Form
@@ -17,6 +16,7 @@ namespace FNFNewBot
         private bool _isClosing;
         private static int _salt;
         private SongInfo _currentSongInfo;
+        private Song _currentSong;
         private string _selectedDifficulty;
 
         public MainForm()
@@ -117,7 +117,7 @@ namespace FNFNewBot
                 return;
             }
 
-            Log($"{DateTime.Now:HH:mm:ss.fff}\tMode {_selectedDifficulty} Start");
+            Log($"{DateTime.Now:HH:mm:ss.fff}\tStart");
 
             _isExecuting = true;
             await Task.Run(() => ExecuteNotesInParallel(notes));
@@ -276,8 +276,9 @@ namespace FNFNewBot
                 string jsonContent = File.ReadAllText(filePath);
                 Song? song = JsonConvert.DeserializeObject<Song>(jsonContent);
                 if (song == null) return;
-                _currentSongInfo = SongInfo.From(1, Path.GetFileNameWithoutExtension(filePath), song, _keyTypes);
-                PopulateDifficultyComboBox(song.Notes);
+                _currentSong = song;
+                _currentSongInfo = SongInfo.From(1, Path.GetFileNameWithoutExtension(filePath), _currentSong, _keyTypes);
+                PopulateDifficultyComboBox(_currentSong.Notes);
             }
             catch (Exception ex)
             {
@@ -351,10 +352,19 @@ namespace FNFNewBot
                     _keyTypes.Add(KeyType.FromString(key));
                 }
                 Log($"{DateTime.Now:HH:mm:ss.fff}\tKeyMap: {(string.Join(", ", _keyTypes.Select(k => k.Name)))}");
+                UpdateCurrentSongInfo();
             }
             catch (ArgumentException ex)
             {
                 Log("Error: " + ex.Message);
+            }
+        }
+
+        private void UpdateCurrentSongInfo()
+        {
+            if (_currentSong != null && _currentSongInfo != null)
+            {
+                _currentSongInfo = SongInfo.From(_currentSongInfo.Version, _currentSongInfo.Name, _currentSong, _keyTypes);
             }
         }
 

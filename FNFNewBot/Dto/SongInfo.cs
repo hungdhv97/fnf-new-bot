@@ -13,7 +13,7 @@
         public int Direction { get; set; }
         public double Time { get; set; }
         public double? Length { get; set; }
-        public KeyType? KeyType { get; set; }
+        public KeyType KeyType { get; set; }
 
         public static NoteInfo From(Note note, KeyType keyType)
         {
