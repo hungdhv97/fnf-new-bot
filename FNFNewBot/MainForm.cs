@@ -244,7 +244,7 @@ namespace FNFNewBot
             }
         }
 
-        private void PopulateDifficultyComboBox(Difficulty notes)
+        private void PopulateDifficultyComboBox(Difficulty2 notes)
         {
             comboBoxDifficulty.Items.Clear();
             if (notes.Easy.Any()) comboBoxDifficulty.Items.Add("Easy");

@@ -15,7 +15,7 @@
         public double? Length { get; set; }
         public KeyType KeyType { get; set; }
 
-        public static NoteInfo From(Note note, KeyType keyType)
+        public static NoteInfo From(Note2 note, KeyType keyType)
         {
             return new NoteInfo
             {
@@ -32,7 +32,7 @@
         public List<NoteInfo> Notes { get; set; } = new();
         public DifficultyMode Mode { get; set; }
 
-        public static NoteSection From(List<Note> notes, DifficultyMode mode, List<KeyType> keyTypes)
+        public static NoteSection From(List<Note2> notes, DifficultyMode mode, List<KeyType> keyTypes)
         {
             return new NoteSection
             {

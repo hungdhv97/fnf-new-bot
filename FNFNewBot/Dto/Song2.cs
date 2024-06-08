@@ -2,7 +2,7 @@
 
 namespace FNFNewBot.Dto;
 
-public class Note
+public class Note2
 {
     [JsonProperty("d")] public int Direction { get; set; }
 
@@ -13,18 +13,18 @@ public class Note
     [JsonProperty("k")] public string? Key { get; set; }
 }
 
-public class Difficulty
+public class Difficulty2
 {
-    [JsonProperty("easy")] public List<Note> Easy { get; set; } = new();
+    [JsonProperty("easy")] public List<Note2> Easy { get; set; } = new();
 
-    [JsonProperty("hard")] public List<Note> Hard { get; set; } = new();
+    [JsonProperty("hard")] public List<Note2> Hard { get; set; } = new();
 
-    [JsonProperty("normal")] public List<Note> Normal { get; set; } = new();
+    [JsonProperty("normal")] public List<Note2> Normal { get; set; } = new();
 
-    [JsonProperty("erect")] public List<Note> Erect { get; set; } = new();
+    [JsonProperty("erect")] public List<Note2> Erect { get; set; } = new();
 }
 
 public class Song2
 {
-    [JsonProperty("notes")] public Difficulty Notes { get; set; } = new();
+    [JsonProperty("notes")] public Difficulty2 Notes { get; set; } = new();
 }
