@@ -36,9 +36,10 @@
             textBoxKeyMap = new TextBox();
             label1 = new Label();
             label2 = new Label();
+            buttonChangeKeyMap = new Button();
             label3 = new Label();
             nUDSalt = new NumericUpDown();
-            buttonChangeKeyMap = new Button();
+            buttonChooseDifficulty = new Button();
             ((System.ComponentModel.ISupportInitialize)nUDSalt).BeginInit();
             SuspendLayout();
             // 
@@ -62,9 +63,9 @@
             // 
             // treeViewJsonFiles
             // 
-            treeViewJsonFiles.Location = new Point(12, 102);
+            treeViewJsonFiles.Location = new Point(12, 129);
             treeViewJsonFiles.Name = "treeViewJsonFiles";
-            treeViewJsonFiles.Size = new Size(363, 336);
+            treeViewJsonFiles.Size = new Size(363, 309);
             treeViewJsonFiles.TabIndex = 2;
             treeViewJsonFiles.NodeMouseDoubleClick += treeViewJsonFiles_NodeMouseDoubleClick;
             // 
@@ -83,7 +84,7 @@
             comboBoxDifficulty.FormattingEnabled = true;
             comboBoxDifficulty.Location = new Point(73, 43);
             comboBoxDifficulty.Name = "comboBoxDifficulty";
-            comboBoxDifficulty.Size = new Size(127, 23);
+            comboBoxDifficulty.Size = new Size(188, 23);
             comboBoxDifficulty.TabIndex = 4;
             // 
             // textBoxKeyMap
@@ -112,27 +113,6 @@
             label2.TabIndex = 7;
             label2.Text = "Key map";
             // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Location = new Point(224, 46);
-            label3.Name = "label3";
-            label3.Size = new Size(26, 15);
-            label3.TabIndex = 9;
-            label3.Text = "Salt";
-            // 
-            // nUDSalt
-            // 
-            nUDSalt.Increment = new decimal(new int[] { 10, 0, 0, 0 });
-            nUDSalt.Location = new Point(267, 43);
-            nUDSalt.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
-            nUDSalt.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
-            nUDSalt.Name = "nUDSalt";
-            nUDSalt.Size = new Size(108, 23);
-            nUDSalt.TabIndex = 10;
-            nUDSalt.TextAlign = HorizontalAlignment.Center;
-            nUDSalt.ValueChanged += nUDSalt_ValueChanged;
-            // 
             // buttonChangeKeyMap
             // 
             buttonChangeKeyMap.Location = new Point(267, 71);
@@ -143,11 +123,43 @@
             buttonChangeKeyMap.UseVisualStyleBackColor = true;
             buttonChangeKeyMap.Click += buttonChangeKeyMap_Click;
             // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new Point(12, 102);
+            label3.Name = "label3";
+            label3.Size = new Size(26, 15);
+            label3.TabIndex = 9;
+            label3.Text = "Salt";
+            // 
+            // nUDSalt
+            // 
+            nUDSalt.Increment = new decimal(new int[] { 10, 0, 0, 0 });
+            nUDSalt.Location = new Point(73, 100);
+            nUDSalt.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
+            nUDSalt.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
+            nUDSalt.Name = "nUDSalt";
+            nUDSalt.Size = new Size(71, 23);
+            nUDSalt.TabIndex = 10;
+            nUDSalt.TextAlign = HorizontalAlignment.Center;
+            nUDSalt.ValueChanged += nUDSalt_ValueChanged;
+            // 
+            // buttonChooseDifficulty
+            // 
+            buttonChooseDifficulty.Location = new Point(267, 40);
+            buttonChooseDifficulty.Name = "buttonChooseDifficulty";
+            buttonChooseDifficulty.Size = new Size(108, 25);
+            buttonChooseDifficulty.TabIndex = 14;
+            buttonChooseDifficulty.Text = "Choose Difficulty";
+            buttonChooseDifficulty.UseVisualStyleBackColor = true;
+            buttonChooseDifficulty.Click += buttonChangeDifficulty_Click;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(742, 446);
+            Controls.Add(buttonChooseDifficulty);
             Controls.Add(buttonChangeKeyMap);
             Controls.Add(nUDSalt);
             Controls.Add(label3);
@@ -179,8 +191,9 @@
         private TextBox textBoxKeyMap;
         private Label label1;
         private Label label2;
+        private Button buttonChangeKeyMap;
         private Label label3;
         private NumericUpDown nUDSalt;
-        private Button buttonChangeKeyMap;
+        private Button buttonChooseDifficulty;
     }
 }

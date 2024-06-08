@@ -2,8 +2,7 @@
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+
 
 namespace FNFNewBot
 {
@@ -12,15 +11,13 @@ namespace FNFNewBot
         private const long OneMillion = 1_000_000;
         private IntPtr _hookId = IntPtr.Zero;
         private LowLevelKeyboardProc _proc;
-        private static List<Note> _easyNotes = new();
-        private static List<Note> _normalNotes = new();
-        private static List<Note> _hardNotes = new();
-        private static List<Note> _erectNotes = new();
-        private static List<KeyType> _keyMap = [KeyType.Left, KeyType.Down, KeyType.Up, KeyType.Right];
+        private static List<KeyType> _keyTypes = new();
         private Stopwatch _stopwatch;
         private bool _isExecuting;
         private bool _isClosing;
         private static int _salt;
+        private SongInfo _currentSongInfo;
+        private string _selectedDifficulty;
 
         public MainForm()
         {
@@ -34,6 +31,7 @@ namespace FNFNewBot
 
             _salt = (int)nUDSalt.Value;
             SetupAutoComplete();
+            ChangeKeyTypes(textBoxKeyMap.Text);
         }
 
         private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
@@ -43,8 +41,7 @@ namespace FNFNewBot
         private const int WM_KEYUP = 0x0101;
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod,
-            uint dwThreadId);
+        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -112,22 +109,15 @@ namespace FNFNewBot
                 return;
             }
 
-            if (comboBoxDifficulty.SelectedItem == null)
-            {
-                Log($"{DateTime.Now:HH:mm:ss.fff}\tPlease choose chart");
-                return;
-            }
+            var notes = GetNotesForDifficulty(_selectedDifficulty);
 
-            string selectedDifficulty = comboBoxDifficulty.SelectedItem.ToString()!;
-
-            List<Note> notes = GetNotesForDifficulty(selectedDifficulty);
             if (!notes.Any())
             {
                 Log($"{DateTime.Now:HH:mm:ss.fff}\tNo notes available for the selected difficulty", Color.Red);
                 return;
             }
 
-            Log($"{DateTime.Now:HH:mm:ss.fff}\tMode {selectedDifficulty} Start");
+            Log($"{DateTime.Now:HH:mm:ss.fff}\tMode {_selectedDifficulty} Start");
 
             _isExecuting = true;
             await Task.Run(() => ExecuteNotesInParallel(notes));
@@ -137,19 +127,13 @@ namespace FNFNewBot
             Log($"{DateTime.Now:HH:mm:ss.fff}\tStop");
         }
 
-        private static List<Note> GetNotesForDifficulty(string difficulty)
+        private List<NoteInfo> GetNotesForDifficulty(string difficulty)
         {
-            return difficulty switch
-            {
-                "Easy" => _easyNotes,
-                "Normal" => _normalNotes,
-                "Hard" => _hardNotes,
-                "Erect" => _erectNotes,
-                _ => new List<Note>()
-            };
+            var section = _currentSongInfo.Sections.FirstOrDefault(s => s.Mode.ToString() == difficulty);
+            return section?.Notes ?? new List<NoteInfo>();
         }
 
-        private void ExecuteNotesInParallel(List<Note> notes)
+        private void ExecuteNotesInParallel(List<NoteInfo> notes)
         {
             var notesByDirection = notes
                 .Where(note => note.Direction is >= 0 and <= 3)
@@ -171,9 +155,9 @@ namespace FNFNewBot
             }
         }
 
-        private void ExecuteNotes(List<Note> notes)
+        private void ExecuteNotes(List<NoteInfo> notes)
         {
-            foreach (Note note in notes)
+            foreach (NoteInfo note in notes)
             {
                 long targetTimeNanoseconds = (long)(note.Time * OneMillion);
                 WaitForNanoseconds(_stopwatch, targetTimeNanoseconds);
@@ -182,12 +166,12 @@ namespace FNFNewBot
             }
         }
 
-        private void PressKey(Note note)
+        private void PressKey(NoteInfo note)
         {
             int direction = note.Direction;
             double? length = note.Length;
 
-            KeyType keyType = _keyMap[note.Direction];
+            KeyType keyType = note.KeyType;
 
             Log(
                 $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', 4 - direction)}{length}",
@@ -270,6 +254,7 @@ namespace FNFNewBot
             if (comboBoxDifficulty.Items.Count > 0)
             {
                 comboBoxDifficulty.SelectedIndex = 0;
+                Log($"{DateTime.Now:HH:mm:ss.fff}\tDifficult Mode: {comboBoxDifficulty.SelectedItem?.ToString()}");
             }
         }
 
@@ -291,10 +276,7 @@ namespace FNFNewBot
                 string jsonContent = File.ReadAllText(filePath);
                 Song? song = JsonConvert.DeserializeObject<Song>(jsonContent);
                 if (song == null) return;
-                _easyNotes = song.Notes.Easy;
-                _normalNotes = song.Notes.Normal;
-                _hardNotes = song.Notes.Hard;
-                _erectNotes = song.Notes.Erect;
+                _currentSongInfo = SongInfo.From(1, Path.GetFileNameWithoutExtension(filePath), song, _keyTypes);
                 PopulateDifficultyComboBox(song.Notes);
             }
             catch (Exception ex)
@@ -343,21 +325,32 @@ namespace FNFNewBot
         {
             textBoxKeyMap.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
             textBoxKeyMap.AutoCompleteSource = AutoCompleteSource.CustomSource;
-            AutoCompleteStringCollection keyMapSuggestions = ["left_down_up_right", "a_s_d_f", "a_s_d_f_space_left_down_up_right"];
+            AutoCompleteStringCollection keyMapSuggestions = new AutoCompleteStringCollection
+            {
+                "left_down_up_right",
+                "a_s_d_f",
+                "a_s_d_f_space_left_down_up_right"
+            };
             textBoxKeyMap.AutoCompleteCustomSource = keyMapSuggestions;
         }
+
         private void buttonChangeKeyMap_Click(object sender, EventArgs e)
+        {
+            string input = textBoxKeyMap.Text;
+            ChangeKeyTypes(input);
+        }
+
+        private void ChangeKeyTypes(string input)
         {
             try
             {
-                string input = textBoxKeyMap.Text;
                 string[] keys = input.Split('_');
-                _keyMap.Clear();
+                _keyTypes.Clear();
                 foreach (var key in keys)
                 {
-                    _keyMap.Add(KeyType.FromString(key));
+                    _keyTypes.Add(KeyType.FromString(key));
                 }
-                Log("KeyMap: " + string.Join(", ", _keyMap.Select(k => k.Name)));
+                Log($"{DateTime.Now:HH:mm:ss.fff}\tKeyMap: {(string.Join(", ", _keyTypes.Select(k => k.Name)))}");
             }
             catch (ArgumentException ex)
             {
@@ -369,6 +362,18 @@ namespace FNFNewBot
         {
             _salt = (int)nUDSalt.Value;
             Log($"Salt: {_salt} ms");
+        }
+
+        private void buttonChangeDifficulty_Click(object sender, EventArgs e)
+        {
+            if (comboBoxDifficulty.SelectedItem == null)
+            {
+                Log($"{DateTime.Now:HH:mm:ss.fff}\tPlease choose chart");
+                return;
+            }
+
+            _selectedDifficulty = comboBoxDifficulty.SelectedItem.ToString()!;
+            Log($"{DateTime.Now:HH:mm:ss.fff}\tDifficult Mode: {_selectedDifficulty}");
         }
     }
 }
