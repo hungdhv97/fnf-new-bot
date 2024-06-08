@@ -51,7 +51,7 @@
         public string Name { get; set; }
         public List<NoteSection> Sections { get; set; } = new();
 
-        public static SongInfo From(int version, string name, Song song, List<KeyType> keyTypes)
+        public static SongInfo From(int version, string name, Song2 song, List<KeyType> keyTypes)
         {
             return new SongInfo
             {

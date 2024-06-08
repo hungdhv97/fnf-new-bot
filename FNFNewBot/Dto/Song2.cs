@@ -24,7 +24,7 @@ public class Difficulty
     [JsonProperty("erect")] public List<Note> Erect { get; set; } = new();
 }
 
-public class Song
+public class Song2
 {
     [JsonProperty("notes")] public Difficulty Notes { get; set; } = new();
 }
