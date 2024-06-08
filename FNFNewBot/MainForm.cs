@@ -1,5 +1,6 @@
 ﻿using FNFNewBot.Dto;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -16,7 +17,8 @@ namespace FNFNewBot
         private bool _isClosing;
         private static int _salt;
         private SongInfo _currentSongInfo;
-        private Song2 _currentSong2;
+        private Song1? _currentSong1;
+        private Song2? _currentSong2;
         private string _selectedDifficulty;
 
         public MainForm()
@@ -244,17 +246,31 @@ namespace FNFNewBot
             }
         }
 
-        private void PopulateDifficultyComboBox(Difficulty2 notes)
+        private void PopulateDifficultyComboBox(List<NoteSection> noteSections)
         {
             comboBoxDifficulty.Items.Clear();
-            if (notes.Easy.Any()) comboBoxDifficulty.Items.Add("Easy");
-            if (notes.Normal.Any()) comboBoxDifficulty.Items.Add("Normal");
-            if (notes.Hard.Any()) comboBoxDifficulty.Items.Add("Hard");
-            if (notes.Erect.Any()) comboBoxDifficulty.Items.Add("Erect");
+
+            var difficultyModes = new Dictionary<DifficultyMode, string>
+            {
+                { DifficultyMode.Easy, "Easy" },
+                { DifficultyMode.Normal, "Normal" },
+                { DifficultyMode.Hard, "Hard" },
+                { DifficultyMode.Erect, "Erect" }
+            };
+
+            foreach (var section in noteSections)
+            {
+                if (section.Notes.Any() && difficultyModes.ContainsKey(section.Mode))
+                {
+                    comboBoxDifficulty.Items.Add(difficultyModes[section.Mode]);
+                }
+            }
+
             if (comboBoxDifficulty.Items.Count > 0)
             {
                 comboBoxDifficulty.SelectedIndex = 0;
-                Log($"{DateTime.Now:HH:mm:ss.fff}\tDifficult Mode: {comboBoxDifficulty.SelectedItem?.ToString()}");
+                _selectedDifficulty = comboBoxDifficulty.SelectedItem?.ToString()!;
+                Log($"{DateTime.Now:HH:mm:ss.fff}\tDifficult Mode: {comboBoxDifficulty.SelectedItem}");
             }
         }
 
@@ -274,15 +290,62 @@ namespace FNFNewBot
             try
             {
                 string jsonContent = File.ReadAllText(filePath);
-                Song2? song = JsonConvert.DeserializeObject<Song2>(jsonContent);
-                if (song == null) return;
-                _currentSong2 = song;
-                _currentSongInfo = SongInfo.From(1, Path.GetFileNameWithoutExtension(filePath), _currentSong2, _keyTypes);
-                PopulateDifficultyComboBox(_currentSong2.Notes);
+
+                if (IsValidSong1(jsonContent))
+                {
+                    var song1 = JsonConvert.DeserializeObject<Song1>(jsonContent);
+                    if (song1 != null)
+                    {
+                        _currentSong1 = song1;
+                        _currentSongInfo = SongInfo.From(Path.GetFileNameWithoutExtension(filePath), _currentSong1, _keyTypes);
+                        PopulateDifficultyComboBox(_currentSongInfo.Sections);
+                        return;
+                    }
+                }
+
+                if (IsValidSong2(jsonContent))
+                {
+                    var song2 = JsonConvert.DeserializeObject<Song2>(jsonContent);
+                    if (song2 != null)
+                    {
+                        _currentSong2 = song2;
+                        _currentSongInfo = SongInfo.From(Path.GetFileNameWithoutExtension(filePath), _currentSong2, _keyTypes);
+                        PopulateDifficultyComboBox(_currentSongInfo.Sections);
+                        return;
+                    }
+                }
+
+                Log($"Error reading JSON file: Unknown format", Color.Red);
             }
             catch (Exception ex)
             {
                 Log($"Error reading JSON file: {ex.Message}", Color.Red);
+            }
+        }
+
+        private bool IsValidSong1(string jsonContent)
+        {
+            try
+            {
+                var jsonObject = JsonConvert.DeserializeObject<JObject>(jsonContent);
+                return jsonObject.ContainsKey("song") && jsonObject["song"]?["notes"] != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool IsValidSong2(string jsonContent)
+        {
+            try
+            {
+                var jsonObject = JsonConvert.DeserializeObject<JObject>(jsonContent);
+                return jsonObject.ContainsKey("notes");
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -362,10 +425,14 @@ namespace FNFNewBot
 
         private void UpdateCurrentSongInfo()
         {
-            if (_currentSong2 != null && _currentSongInfo != null)
+            if (_currentSongInfo == null) return;
+
+            _currentSongInfo = _currentSongInfo.Version switch
             {
-                _currentSongInfo = SongInfo.From(_currentSongInfo.Version, _currentSongInfo.Name, _currentSong2, _keyTypes);
-            }
+                2 when _currentSong2 != null => SongInfo.From(_currentSongInfo.Name, _currentSong2, _keyTypes),
+                1 when _currentSong1 != null => SongInfo.From(_currentSongInfo.Name, _currentSong1, _keyTypes),
+                _ => _currentSongInfo
+            };
         }
 
         private void nUDSalt_ValueChanged(object sender, EventArgs e)

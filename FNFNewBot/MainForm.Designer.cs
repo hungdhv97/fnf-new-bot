@@ -77,6 +77,7 @@
             logTextBox.Size = new Size(352, 395);
             logTextBox.TabIndex = 3;
             logTextBox.Text = "";
+            logTextBox.WordWrap = false;
             // 
             // comboBoxDifficulty
             // 
@@ -102,7 +103,7 @@
             label1.Name = "label1";
             label1.Size = new Size(55, 15);
             label1.TabIndex = 6;
-            label1.Text = "Difficulty2";
+            label1.Text = "Difficulty";
             // 
             // label2
             // 
@@ -150,7 +151,7 @@
             buttonChooseDifficulty.Name = "buttonChooseDifficulty";
             buttonChooseDifficulty.Size = new Size(108, 25);
             buttonChooseDifficulty.TabIndex = 14;
-            buttonChooseDifficulty.Text = "Choose Difficulty2";
+            buttonChooseDifficulty.Text = "Change Difficulty";
             buttonChooseDifficulty.UseVisualStyleBackColor = true;
             buttonChooseDifficulty.Click += buttonChangeDifficulty_Click;
             // 

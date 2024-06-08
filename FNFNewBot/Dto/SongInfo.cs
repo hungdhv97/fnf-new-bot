@@ -25,6 +25,17 @@
                 KeyType = keyType
             };
         }
+
+        public static NoteInfo From(double[] noteData, KeyType keyType)
+        {
+            return new NoteInfo
+            {
+                Direction = (int)noteData[1],
+                Time = noteData[0],
+                Length = noteData[2],
+                KeyType = keyType
+            };
+        }
     }
 
     public class NoteSection
@@ -43,6 +54,23 @@
                 Mode = mode
             };
         }
+
+        public static NoteSection From(List<SectionNotes1Detail> notes, DifficultyMode mode, List<KeyType> keyTypes)
+        {
+            var filteredNotes = notes
+                .Where(noteDetail => noteDetail.MustHitSection)
+                .SelectMany(noteDetail => noteDetail.SectionNotes)
+                .ToList();
+
+            return new NoteSection
+            {
+                Notes = filteredNotes
+                    .Where(noteData => noteData[1] < keyTypes.Count)
+                    .Select(noteData => NoteInfo.From(noteData.ToArray(), keyTypes[(int)noteData[1]]))
+                    .ToList(),
+                Mode = mode
+            };
+        }
     }
 
     public class SongInfo
@@ -51,11 +79,11 @@
         public string Name { get; set; }
         public List<NoteSection> Sections { get; set; } = new();
 
-        public static SongInfo From(int version, string name, Song2 song, List<KeyType> keyTypes)
+        public static SongInfo From(string name, Song2 song, List<KeyType> keyTypes)
         {
             return new SongInfo
             {
-                Version = version,
+                Version = 2,
                 Name = name,
                 Sections = new List<NoteSection>
                 {
@@ -63,6 +91,26 @@
                     NoteSection.From(song.Notes.Normal, DifficultyMode.Normal, keyTypes),
                     NoteSection.From(song.Notes.Hard, DifficultyMode.Hard, keyTypes),
                     NoteSection.From(song.Notes.Erect, DifficultyMode.Erect, keyTypes)
+                }
+            };
+        }
+
+        public static SongInfo From(string name, Song1 song, List<KeyType> keyTypes)
+        {
+            DifficultyMode mode = name.ToLower() switch
+            {
+                var n when n.Contains("easy") => DifficultyMode.Easy,
+                var n when n.Contains("hard") => DifficultyMode.Hard,
+                _ => DifficultyMode.Normal
+            };
+
+            return new SongInfo
+            {
+                Version = 1,
+                Name = name,
+                Sections = new List<NoteSection>
+                {
+                    NoteSection.From(song.Song.Notes, mode, keyTypes)
                 }
             };
         }
