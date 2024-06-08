@@ -142,11 +142,11 @@ namespace FNFNewBot
                 .GroupBy(note => note.Direction)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
+            _stopwatch = Stopwatch.StartNew();
             List<Task> tasks = notesByDirection
                 .Select(directionNotes => Task.Run(() => ExecuteNotes(directionNotes.Value)))
                 .ToList();
 
-            _stopwatch = Stopwatch.StartNew();
             try
             {
                 Task.WhenAll(tasks).Wait();
