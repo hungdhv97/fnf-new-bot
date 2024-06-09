@@ -13,6 +13,7 @@
         public int Direction { get; set; }
         public double Time { get; set; }
         public double? Length { get; set; }
+        public int? Special { get; set; }
         public KeyType KeyType { get; set; }
 
         public static NoteInfo From(Note2 note, KeyType keyType)
@@ -26,14 +27,15 @@
             };
         }
 
-        public static NoteInfo From(int Direction, double[] noteData, KeyType keyType)
+        public static NoteInfo From(int Direction, object[] noteData, KeyType keyType)
         {
             return new NoteInfo
             {
                 Direction = Direction,
-                Time = noteData[0],
-                Length = noteData[2],
-                KeyType = keyType
+                Time = Convert.ToDouble(noteData[0]),
+                Length = Convert.ToDouble(noteData[2]),
+                KeyType = keyType,
+                Special = noteData.Length > 3 ? Convert.ToInt32(noteData[3]) : null,
             };
         }
 
@@ -73,16 +75,16 @@
             var filteredNotes = notes
                 .SelectMany(noteDetail =>
                     noteDetail.MustHitSection
-                    ? noteDetail.SectionNotes.Where(noteData => noteData[1] < keyCount)
-                    : noteDetail.SectionNotes.Where(noteData => noteData[1] >= keyCount)
+                    ? noteDetail.SectionNotes.Where(noteData => Convert.ToInt32(noteData[1]) < keyCount)
+                    : noteDetail.SectionNotes.Where(noteData => Convert.ToInt32(noteData[1]) >= keyCount)
                 )
-                .OrderBy(noteData => noteData[0])
+                .OrderBy(noteData => Convert.ToDouble(noteData[0]))
                 .ToList();
 
             return new NoteSection
             {
                 Notes = filteredNotes
-                    .Select(noteData => NoteInfo.From((int)noteData[1] % keyCount, noteData.ToArray(), keyTypes[(int)noteData[1] % keyCount]))
+                    .Select(noteData => NoteInfo.From(Convert.ToInt32(noteData[1]) % keyCount, noteData.ToArray(), keyTypes[Convert.ToInt32(noteData[1]) % keyCount]))
                     .ToList(),
                 Mode = mode
             };
@@ -111,6 +113,16 @@
                 }
             }
             return this;
+        }
+
+        public List<int> GetSpecialNotes()
+        {
+            return Notes
+                .Where(n => n.Special.HasValue)
+                .Select(n => n.Special!.Value)
+                .Distinct()
+                .OrderBy(special => special)
+                .ToList();
         }
     }
 

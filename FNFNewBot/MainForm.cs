@@ -319,6 +319,8 @@ namespace FNFNewBot
             {
                 comboBoxDifficulty.SelectedIndex = 0;
                 _selectedDifficulty = comboBoxDifficulty.SelectedItem?.ToString()!;
+                var section = _currentSongInfo!.Sections.FirstOrDefault(s => s.Mode.ToString() == _selectedDifficulty);
+                ShowSpecialNotesDialog(section!.GetSpecialNotes());
                 Log($"{DateTime.Now:HH:mm:ss.fff}\tDifficult Mode: {comboBoxDifficulty.SelectedItem}");
             }
         }
@@ -327,14 +329,6 @@ namespace FNFNewBot
         {
             if (e.Node.Tag is string filePath && filePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
             {
-                using (var dialog = new RemoveDeadNotesDialog([0, 1, 2, 3]))
-                {
-                    if (dialog.ShowDialog(this) == DialogResult.OK)
-                    {
-                        var checkedItems = dialog.GetCheckedItems();
-                        MessageBox.Show("Checked items: " + string.Join(", ", checkedItems));
-                    }
-                }
                 ReadJsonFile(filePath);
             }
         }
@@ -545,9 +539,25 @@ namespace FNFNewBot
                 Log($"{DateTime.Now:HH:mm:ss.fff}\tPlease choose chart");
                 return;
             }
-
             _selectedDifficulty = comboBoxDifficulty.SelectedItem.ToString()!;
+            var section = _currentSongInfo!.Sections.FirstOrDefault(s => s.Mode.ToString() == _selectedDifficulty);
+            ShowSpecialNotesDialog(section!.GetSpecialNotes());
             Log($"{DateTime.Now:HH:mm:ss.fff}\tDifficult Mode: {_selectedDifficulty}");
+        }
+
+        private void ShowSpecialNotesDialog(List<int> specialNotes)
+        {
+            if (specialNotes.Any())
+            {
+                using (var dialog = new RemoveDeadNotesDialog(specialNotes))
+                {
+                    if (dialog.ShowDialog(this) == DialogResult.OK)
+                    {
+                        var checkedItems = dialog.GetCheckedItems();
+                        Log("Removed special notes: " + string.Join(", ", checkedItems));
+                    }
+                }
+            }
         }
     }
 }

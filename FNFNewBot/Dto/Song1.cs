@@ -4,7 +4,7 @@ namespace FNFNewBot.Dto;
 
 public class SectionNotes1Detail
 {
-    [JsonProperty("sectionNotes")] public List<List<double>> SectionNotes { get; set; }
+    [JsonProperty("sectionNotes")] public List<List<object>> SectionNotes { get; set; }
 
     [JsonProperty("mustHitSection")] public bool MustHitSection { get; set; }
 }
