@@ -59,6 +59,9 @@ namespace FNFNewBot
         [DllImport("user32.dll", SetLastError = true)]
         private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
 
+        [DllImport("user32.dll")]
+        private static extern uint MapVirtualKey(uint uCode, uint uMapType);
+
         private static IntPtr SetHook(LowLevelKeyboardProc proc)
         {
             using Process curProcess = Process.GetCurrentProcess();
@@ -194,9 +197,6 @@ namespace FNFNewBot
 
             keybd_event(keyType.Code, (byte)scanCode, 2, 0);
         }
-
-        [DllImport("user32.dll")]
-        private static extern uint MapVirtualKey(uint uCode, uint uMapType);
 
         private void WaitForNanoseconds(Stopwatch stopwatch, long nanoseconds)
         {
