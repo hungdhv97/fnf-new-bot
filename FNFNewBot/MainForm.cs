@@ -320,7 +320,7 @@ namespace FNFNewBot
                 comboBoxDifficulty.SelectedIndex = 0;
                 _selectedDifficulty = comboBoxDifficulty.SelectedItem?.ToString()!;
                 var section = _currentSongInfo!.Sections.FirstOrDefault(s => s.Mode.ToString() == _selectedDifficulty);
-                ShowSpecialNotesDialog(section!.GetSpecialNotes());
+                RemoveSpecialNotes(section!.GetSpecialNotes());
                 Log($"{DateTime.Now:HH:mm:ss.fff}\tDifficult Mode: {comboBoxDifficulty.SelectedItem}");
             }
         }
@@ -541,11 +541,11 @@ namespace FNFNewBot
             }
             _selectedDifficulty = comboBoxDifficulty.SelectedItem.ToString()!;
             var section = _currentSongInfo!.Sections.FirstOrDefault(s => s.Mode.ToString() == _selectedDifficulty);
-            ShowSpecialNotesDialog(section!.GetSpecialNotes());
+            RemoveSpecialNotes(section!.GetSpecialNotes());
             Log($"{DateTime.Now:HH:mm:ss.fff}\tDifficult Mode: {_selectedDifficulty}");
         }
 
-        private void ShowSpecialNotesDialog(List<int> specialNotes)
+        private void RemoveSpecialNotes(List<int> specialNotes)
         {
             if (specialNotes.Any())
             {

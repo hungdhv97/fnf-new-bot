@@ -124,6 +124,14 @@
                 .OrderBy(special => special)
                 .ToList();
         }
+
+        public NoteSection ToRemoveDeadNotes(List<int> deadNotes)
+        {
+            Notes = Notes
+                .Where(n => !n.Special.HasValue || !deadNotes.Contains(n.Special.Value))
+                .ToList();
+            return this;
+        }
     }
 
     public class SongInfo
