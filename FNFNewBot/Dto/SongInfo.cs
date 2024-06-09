@@ -26,11 +26,11 @@
             };
         }
 
-        public static NoteInfo From(double[] noteData, KeyType keyType)
+        public static NoteInfo From(int Direction, double[] noteData, KeyType keyType)
         {
             return new NoteInfo
             {
-                Direction = (int)noteData[1],
+                Direction = Direction,
                 Time = noteData[0],
                 Length = noteData[2],
                 KeyType = keyType
@@ -68,16 +68,21 @@
 
         public static NoteSection From(List<SectionNotes1Detail> notes, DifficultyMode mode, List<KeyType> keyTypes)
         {
+            int keyCount = keyTypes.Count;
+
             var filteredNotes = notes
-                .Where(noteDetail => noteDetail.MustHitSection)
-                .SelectMany(noteDetail => noteDetail.SectionNotes)
+                .SelectMany(noteDetail =>
+                    noteDetail.MustHitSection
+                    ? noteDetail.SectionNotes.Where(noteData => noteData[1] < keyCount)
+                    : noteDetail.SectionNotes.Where(noteData => noteData[1] >= keyCount)
+                )
+                .OrderBy(noteData => noteData[0])
                 .ToList();
 
             return new NoteSection
             {
                 Notes = filteredNotes
-                    .Where(noteData => noteData[1] < keyTypes.Count)
-                    .Select(noteData => NoteInfo.From(noteData.ToArray(), keyTypes[(int)noteData[1]]))
+                    .Select(noteData => NoteInfo.From((int)noteData[1] % keyCount, noteData.ToArray(), keyTypes[(int)noteData[1] % keyCount]))
                     .ToList(),
                 Mode = mode
             };
