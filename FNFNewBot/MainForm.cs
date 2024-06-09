@@ -81,11 +81,11 @@ namespace FNFNewBot
                 {
                     ExecuteNotesInParallelAsync();
                 }
-                else if (key == Keys.Oemplus)
+                else if (key == Keys.D2)
                 {
                     IncrementSalt();
                 }
-                else if (key == Keys.OemMinus)
+                else if (key == Keys.D1)
                 {
                     DecrementSalt();
                 }
@@ -179,7 +179,9 @@ namespace FNFNewBot
                 $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{length}",
                 keyType.Color);
 
-            keybd_event(keyType.Code, 0, 0, 0);
+            uint scanCode = MapVirtualKey(keyType.Code, 0);
+
+            keybd_event(keyType.Code, (byte)scanCode, 0, 0);
 
             if (length is > 0)
             {
@@ -190,8 +192,11 @@ namespace FNFNewBot
                 WaitForNanoseconds(Stopwatch.StartNew(), 50 * OneMillion);
             }
 
-            keybd_event(keyType.Code, 0, 2, 0);
+            keybd_event(keyType.Code, (byte)scanCode, 2, 0);
         }
+
+        [DllImport("user32.dll")]
+        private static extern uint MapVirtualKey(uint uCode, uint uMapType);
 
         private void WaitForNanoseconds(Stopwatch stopwatch, long nanoseconds)
         {
@@ -278,9 +283,6 @@ namespace FNFNewBot
         {
             if (e.Node.Tag is string filePath && filePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
             {
-                string fileName = Path.GetFileNameWithoutExtension(filePath);
-                Log($"{DateTime.Now:HH:mm:ss.fff}\tSelected chart: {fileName}");
-
                 ReadJsonFile(filePath);
             }
         }
@@ -289,6 +291,7 @@ namespace FNFNewBot
         {
             try
             {
+                string fileName = Path.GetFileNameWithoutExtension(filePath);
                 string jsonContent = File.ReadAllText(filePath);
 
                 if (IsValidSong1(jsonContent))
@@ -297,37 +300,39 @@ namespace FNFNewBot
                     if (song1 != null)
                     {
                         _currentSong1 = song1;
-                        _currentSongInfo = SongInfo.From(Path.GetFileNameWithoutExtension(filePath), _currentSong1, _keyTypes);
+                        _currentSongInfo = SongInfo.From(fileName, _currentSong1, _keyTypes);
                         PopulateDifficultyComboBox(_currentSongInfo.Sections);
                         return;
                     }
                 }
-
-                if (IsValidSong2(jsonContent))
+                else if (IsValidSong2(jsonContent))
                 {
                     var song2 = JsonConvert.DeserializeObject<Song2>(jsonContent);
                     if (song2 != null)
                     {
                         _currentSong2 = song2;
-                        _currentSongInfo = SongInfo.From(Path.GetFileNameWithoutExtension(filePath), _currentSong2, _keyTypes);
+                        _currentSongInfo = SongInfo.From(fileName, _currentSong2, _keyTypes);
                         PopulateDifficultyComboBox(_currentSongInfo.Sections);
                         return;
                     }
                 }
-
-                if (IsValidSong3(jsonContent))
+                else if (IsValidSong3(jsonContent))
                 {
                     var song3 = JsonConvert.DeserializeObject<Song3>(jsonContent);
                     if (song3 != null)
                     {
                         _currentSong3 = song3;
-                        _currentSongInfo = SongInfo.From(GetGrandparentFolderName(filePath), _currentSong3, _keyTypes);
+                        _currentSongInfo = SongInfo.From(fileName, _currentSong3, _keyTypes);
                         PopulateDifficultyComboBox(_currentSongInfo.Sections);
                         return;
                     }
                 }
+                else
+                {
+                    Log($"Error reading JSON file: Unknown format", Color.Red);
+                }
 
-                Log($"Error reading JSON file: Unknown format", Color.Red);
+                Log($"{DateTime.Now:HH:mm:ss.fff}\tSelected chart v{_currentSongInfo.Version}: {fileName}");
             }
             catch (Exception ex)
             {
@@ -374,12 +379,6 @@ namespace FNFNewBot
             }
         }
 
-        private string GetGrandparentFolderName(string filePath)
-        {
-            DirectoryInfo directory = Directory.GetParent(filePath).Parent;
-            return directory != null ? directory.Name : Path.GetFileNameWithoutExtension(filePath);
-        }
-
         private void Log(string message, Color? color = null)
         {
             if (logTextBox.InvokeRequired)
@@ -423,11 +422,10 @@ namespace FNFNewBot
             AutoCompleteStringCollection keyMapSuggestions = new AutoCompleteStringCollection
             {
                 "left_down_up_right",
-                "a_s_d_f",
                 "a_s_w_d",
+                "a_s_d_left_down_right",
                 "a_s_d_f_space_left_down_up_right",
                 "a_s_d_f_space_h_j_k_l",
-                "a_s_d_f_space_left_down_up_right",
             };
             textBoxKeyMap.AutoCompleteCustomSource = keyMapSuggestions;
         }
