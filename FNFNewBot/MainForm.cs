@@ -327,6 +327,14 @@ namespace FNFNewBot
         {
             if (e.Node.Tag is string filePath && filePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
             {
+                using (var dialog = new RemoveDeadNotesDialog([0, 1, 2, 3]))
+                {
+                    if (dialog.ShowDialog(this) == DialogResult.OK)
+                    {
+                        var checkedItems = dialog.GetCheckedItems();
+                        MessageBox.Show("Checked items: " + string.Join(", ", checkedItems));
+                    }
+                }
                 ReadJsonFile(filePath);
             }
         }
