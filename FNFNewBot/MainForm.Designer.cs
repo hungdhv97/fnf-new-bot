@@ -40,7 +40,13 @@
             label3 = new Label();
             nUDSalt = new NumericUpDown();
             buttonChooseDifficulty = new Button();
+            nUDPressTime = new NumericUpDown();
+            label4 = new Label();
+            nUDHoldTime = new NumericUpDown();
+            label5 = new Label();
             ((System.ComponentModel.ISupportInitialize)nUDSalt).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)nUDPressTime).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)nUDHoldTime).BeginInit();
             SuspendLayout();
             // 
             // textBoxFolder
@@ -63,9 +69,9 @@
             // 
             // treeViewJsonFiles
             // 
-            treeViewJsonFiles.Location = new Point(12, 129);
+            treeViewJsonFiles.Location = new Point(12, 158);
             treeViewJsonFiles.Name = "treeViewJsonFiles";
-            treeViewJsonFiles.Size = new Size(363, 309);
+            treeViewJsonFiles.Size = new Size(363, 280);
             treeViewJsonFiles.TabIndex = 2;
             treeViewJsonFiles.NodeMouseDoubleClick += treeViewJsonFiles_NodeMouseDoubleClick;
             // 
@@ -127,7 +133,7 @@
             // label3
             // 
             label3.AutoSize = true;
-            label3.Location = new Point(12, 102);
+            label3.Location = new Point(12, 104);
             label3.Name = "label3";
             label3.Size = new Size(26, 15);
             label3.TabIndex = 9;
@@ -155,11 +161,58 @@
             buttonChooseDifficulty.UseVisualStyleBackColor = true;
             buttonChooseDifficulty.Click += buttonChangeDifficulty_Click;
             // 
+            // nUDPressTime
+            // 
+            nUDPressTime.Increment = new decimal(new int[] { 10, 0, 0, 0 });
+            nUDPressTime.Location = new Point(235, 100);
+            nUDPressTime.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
+            nUDPressTime.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
+            nUDPressTime.Name = "nUDPressTime";
+            nUDPressTime.Size = new Size(71, 23);
+            nUDPressTime.TabIndex = 16;
+            nUDPressTime.TextAlign = HorizontalAlignment.Center;
+            nUDPressTime.Value = new decimal(new int[] { 50, 0, 0, 0 });
+            nUDPressTime.ValueChanged += nUDPressTime_ValueChanged;
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Location = new Point(166, 104);
+            label4.Name = "label4";
+            label4.Size = new Size(63, 15);
+            label4.TabIndex = 15;
+            label4.Text = "Press Time";
+            // 
+            // nUDHoldTime
+            // 
+            nUDHoldTime.Increment = new decimal(new int[] { 10, 0, 0, 0 });
+            nUDHoldTime.Location = new Point(73, 129);
+            nUDHoldTime.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
+            nUDHoldTime.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
+            nUDHoldTime.Name = "nUDHoldTime";
+            nUDHoldTime.Size = new Size(71, 23);
+            nUDHoldTime.TabIndex = 18;
+            nUDHoldTime.TextAlign = HorizontalAlignment.Center;
+            nUDHoldTime.ValueChanged += nUDHoldTime_ValueChanged;
+            // 
+            // label5
+            // 
+            label5.AutoSize = true;
+            label5.Location = new Point(12, 133);
+            label5.Name = "label5";
+            label5.Size = new Size(62, 15);
+            label5.TabIndex = 17;
+            label5.Text = "Hold Time";
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(742, 446);
+            Controls.Add(nUDHoldTime);
+            Controls.Add(label5);
+            Controls.Add(nUDPressTime);
+            Controls.Add(label4);
             Controls.Add(buttonChooseDifficulty);
             Controls.Add(buttonChangeKeyMap);
             Controls.Add(nUDSalt);
@@ -178,6 +231,8 @@
             FormClosing += MainForm_FormClosing;
             Load += MainForm_Load;
             ((System.ComponentModel.ISupportInitialize)nUDSalt).EndInit();
+            ((System.ComponentModel.ISupportInitialize)nUDPressTime).EndInit();
+            ((System.ComponentModel.ISupportInitialize)nUDHoldTime).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -196,5 +251,9 @@
         private Label label3;
         private NumericUpDown nUDSalt;
         private Button buttonChooseDifficulty;
+        private NumericUpDown nUDPressTime;
+        private Label label4;
+        private NumericUpDown nUDHoldTime;
+        private Label label5;
     }
 }

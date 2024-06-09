@@ -94,6 +94,19 @@
                 Mode = DifficultyMode.Hard
             };
         }
+
+        public NoteSection ToStart()
+        {
+            if (Notes.Count > 0)
+            {
+                double minTime = Notes.Min(note => note.Time);
+                foreach (var note in Notes)
+                {
+                    note.Time -= minTime;
+                }
+            }
+            return this;
+        }
     }
 
     public class SongInfo

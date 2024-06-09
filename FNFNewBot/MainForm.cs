@@ -16,7 +16,9 @@ namespace FNFNewBot
         private bool _isExecuting;
         private bool _isClosing;
         private static int _salt;
-        private SongInfo _currentSongInfo;
+        private static int _pressTime;
+        private static int _holdTime;
+        private SongInfo? _currentSongInfo;
         private Song1? _currentSong1;
         private Song2? _currentSong2;
         private Song3? _currentSong3;
@@ -33,6 +35,8 @@ namespace FNFNewBot
             _hookId = SetHook(_proc);
 
             _salt = (int)nUDSalt.Value;
+            _pressTime = (int)nUDPressTime.Value;
+            _holdTime = (int)nUDHoldTime.Value;
             SetupAutoComplete();
             ChangeKeyTypes(textBoxKeyMap.Text);
         }
@@ -80,17 +84,33 @@ namespace FNFNewBot
                 {
                     _isClosing = true && _isExecuting;
                 }
-                else if (key == Keys.X)
+                else if (key == Keys.D9)
                 {
                     ExecuteNotesInParallelAsync();
+                }
+                else if (key == Keys.D1)
+                {
+                    DecrementSalt();
                 }
                 else if (key == Keys.D2)
                 {
                     IncrementSalt();
                 }
-                else if (key == Keys.D1)
+                else if (key == Keys.D3)
                 {
-                    DecrementSalt();
+                    DecreasePressTime();
+                }
+                else if (key == Keys.D4)
+                {
+                    IncreasePressTime();
+                }
+                else if (key == Keys.D5)
+                {
+                    DecreaseHoldTime();
+                }
+                else if (key == Keys.D6)
+                {
+                    IncreaseHoldTime();
                 }
             }
 
@@ -107,6 +127,26 @@ namespace FNFNewBot
             if (nUDSalt.Value > nUDSalt.Minimum) nUDSalt.Value -= (int)nUDSalt.Increment;
         }
 
+        private void IncreasePressTime()
+        {
+            if (nUDPressTime.Value < nUDPressTime.Maximum) nUDPressTime.Value += (int)nUDPressTime.Increment;
+        }
+
+        private void DecreasePressTime()
+        {
+            if (nUDPressTime.Value > nUDPressTime.Minimum) nUDPressTime.Value -= (int)nUDPressTime.Increment;
+        }
+
+        private void IncreaseHoldTime()
+        {
+            if (nUDHoldTime.Value < nUDHoldTime.Maximum) nUDHoldTime.Value += (int)nUDHoldTime.Increment;
+        }
+
+        private void DecreaseHoldTime()
+        {
+            if (nUDHoldTime.Value > nUDHoldTime.Minimum) nUDHoldTime.Value -= (int)nUDHoldTime.Increment;
+        }
+
         private async void ExecuteNotesInParallelAsync()
         {
             if (_isExecuting)
@@ -115,9 +155,15 @@ namespace FNFNewBot
                 return;
             }
 
-            var notes = GetNotesForDifficulty(_selectedDifficulty);
+            if (_currentSongInfo == null)
+            {
+                Log($"{DateTime.Now:HH:mm:ss.fff}\tPlease choose song");
+                return;
+            }
 
-            if (!notes.Any())
+            List<NoteInfo> notes = GetNotesForDifficulty(_selectedDifficulty);
+
+            if (notes.Count == 0)
             {
                 Log($"{DateTime.Now:HH:mm:ss.fff}\tNo notes available for the selected difficulty", Color.Red);
                 return;
@@ -135,8 +181,8 @@ namespace FNFNewBot
 
         private List<NoteInfo> GetNotesForDifficulty(string difficulty)
         {
-            var section = _currentSongInfo.Sections.FirstOrDefault(s => s.Mode.ToString() == difficulty);
-            return section?.Notes ?? new List<NoteInfo>();
+            var section = _currentSongInfo!.Sections.FirstOrDefault(s => s.Mode.ToString() == difficulty);
+            return section?.ToStart().Notes ?? new List<NoteInfo>();
         }
 
         private void ExecuteNotesInParallel(List<NoteInfo> notes)
@@ -178,21 +224,19 @@ namespace FNFNewBot
 
             KeyType keyType = note.KeyType;
 
-            Log(
-                $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{length}",
-                keyType.Color);
-
             uint scanCode = MapVirtualKey(keyType.Code, 0);
 
             keybd_event(keyType.Code, (byte)scanCode, 0, 0);
 
             if (length is > 0)
             {
-                WaitForNanoseconds(Stopwatch.StartNew(), (long)(length.Value * OneMillion));
+                WaitForNanoseconds(Stopwatch.StartNew(), (long)((length.Value + _holdTime) * OneMillion));
+                Log($"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{length.Value + _holdTime}", keyType.Color);
             }
             else
             {
-                WaitForNanoseconds(Stopwatch.StartNew(), 50 * OneMillion);
+                WaitForNanoseconds(Stopwatch.StartNew(), _pressTime * OneMillion);
+                Log($"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{_pressTime}", keyType.Color);
             }
 
             keybd_event(keyType.Code, (byte)scanCode, 2, 0);
@@ -472,6 +516,18 @@ namespace FNFNewBot
         {
             _salt = (int)nUDSalt.Value;
             Log($"Salt: {_salt} ms");
+        }
+
+        private void nUDPressTime_ValueChanged(object sender, EventArgs e)
+        {
+            _pressTime = (int)nUDPressTime.Value;
+            Log($"Press Time: {_pressTime} ms");
+        }
+
+        private void nUDHoldTime_ValueChanged(object sender, EventArgs e)
+        {
+            _holdTime = (int)nUDHoldTime.Value;
+            Log($"Hold Time: {_holdTime} ms");
         }
 
         private void buttonChangeDifficulty_Click(object sender, EventArgs e)
