@@ -549,7 +549,7 @@ namespace FNFNewBot
         {
             if (specialNotes.Any())
             {
-                using (var dialog = new RemoveDeadNotesDialog(specialNotes))
+                using (var dialog = new ListCheckBoxDialog(specialNotes))
                 {
                     if (dialog.ShowDialog(this) == DialogResult.OK)
                     {

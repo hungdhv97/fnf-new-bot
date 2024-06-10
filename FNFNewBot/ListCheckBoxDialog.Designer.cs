@@ -1,6 +1,6 @@
 ﻿namespace FNFNewBot
 {
-    partial class RemoveDeadNotesDialog
+    partial class ListCheckBoxDialog
     {
         /// <summary>
         /// Required designer variable.
@@ -48,7 +48,7 @@
             ClientSize = new Size(279, 113);
             Controls.Add(buttonOK);
             FormBorderStyle = FormBorderStyle.FixedDialog;
-            Name = "RemoveDeadNotesDialog";
+            Name = "ListCheckBoxDialog";
             StartPosition = FormStartPosition.CenterParent;
             Text = "RemoveDeadNotes";
             ResumeLayout(false);

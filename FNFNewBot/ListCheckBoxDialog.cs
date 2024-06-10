@@ -1,8 +1,8 @@
 ﻿namespace FNFNewBot
 {
-    public partial class RemoveDeadNotesDialog : Form
+    public partial class ListCheckBoxDialog : Form
     {
-        public RemoveDeadNotesDialog(List<int> items)
+        public ListCheckBoxDialog(List<int> items)
         {
             InitializeComponent();
             LoadCheckboxes(items);
@@ -24,7 +24,7 @@
                 yPos += itemHeight;
             }
 
-            ClientSize = new Size(ClientSize.Width, yPos + 30);
+            ClientSize = ClientSize with { Height = yPos + 30 };
             buttonOK.Location = new Point((ClientSize.Width - buttonOK.Width) / 2, yPos);
         }
 
