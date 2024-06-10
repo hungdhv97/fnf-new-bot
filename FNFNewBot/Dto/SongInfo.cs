@@ -1,4 +1,6 @@
-﻿namespace FNFNewBot.Dto
+﻿using System.Runtime.InteropServices;
+
+namespace FNFNewBot.Dto
 {
     public enum DifficultyMode
     {
@@ -10,11 +12,15 @@
 
     public class NoteInfo
     {
+        [DllImport("user32.dll")]
+        private static extern uint MapVirtualKey(uint uCode, uint uMapType);
+
         public int Direction { get; set; }
         public double Time { get; set; }
         public double? Length { get; set; }
         public string? Special { get; set; }
         public KeyType KeyType { get; set; }
+        public uint ScanCode { get; set; }
 
         public static NoteInfo From(Note2 note, KeyType keyType)
         {
@@ -23,7 +29,8 @@
                 Direction = note.Direction,
                 Time = note.Time,
                 Length = note.Length,
-                KeyType = keyType
+                KeyType = keyType,
+                ScanCode = MapVirtualKey(keyType.Code, 0),
             };
         }
 
@@ -35,6 +42,7 @@
                 Time = Convert.ToDouble(noteData[0]),
                 Length = Convert.ToDouble(noteData[2]),
                 KeyType = keyType,
+                ScanCode = MapVirtualKey(keyType.Code, 0),
                 Special = noteData.Length > 3 ? Convert.ToString(noteData[3]) : null,
             };
         }
@@ -46,7 +54,8 @@
                 Direction = note.Id,
                 Time = note.Time,
                 Length = note.SLen,
-                KeyType = keyType
+                KeyType = keyType,
+                ScanCode = MapVirtualKey(keyType.Code, 0),
             };
         }
     }

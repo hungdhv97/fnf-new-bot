@@ -211,7 +211,7 @@ namespace FNFNewBot
 
             KeyType keyType = note.KeyType;
 
-            uint scanCode = MapVirtualKey(keyType.Code, 0);
+            uint scanCode = note.ScanCode;
 
             keybd_event(keyType.Code, (byte)scanCode, 0, 0);
 
