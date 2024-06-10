@@ -9,7 +9,6 @@ namespace FNFNewBot
 {
     public partial class MainForm : Form
     {
-        // Constants and static variables
         private const long OneMillion = 1_000_000;
         private const int WH_KEYBOARD_LL = 13;
         private const int WM_KEYDOWN = 0x0100;
@@ -19,7 +18,6 @@ namespace FNFNewBot
         private static int _pressTime;
         private static int _holdTime;
 
-        // Instance variables
         private IntPtr _hookId = IntPtr.Zero;
         private LowLevelKeyboardProc _proc;
         private Stopwatch _stopwatch;
@@ -32,14 +30,12 @@ namespace FNFNewBot
         private string _selectedDifficulty;
         private RichTextBoxLogger _logger;
 
-        // Constructor
         public MainForm()
         {
             InitializeComponent();
-            _logger = new RichTextBoxLogger(logRichTextBox); // Initialize logger here
+            _logger = new RichTextBoxLogger(logRichTextBox);
         }
 
-        // Form events
         private void MainForm_Load(object sender, EventArgs e)
         {
             _proc = HookCallback;
@@ -58,7 +54,6 @@ namespace FNFNewBot
             UnhookWindowsHookEx(_hookId);
         }
 
-        // Event handlers
         private void buttonChooseFolder_Click(object sender, EventArgs e)
         {
             using FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
@@ -98,7 +93,6 @@ namespace FNFNewBot
             }
         }
 
-        // Initialization and setup methods
         private void SetupAutoComplete()
         {
             textBoxKeyMap.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
@@ -147,7 +141,6 @@ namespace FNFNewBot
             };
         }
 
-        // Main methods
         private async void ExecuteNotesInParallelAsync()
         {
             if (_isExecuting)
@@ -257,7 +250,6 @@ namespace FNFNewBot
             }
         }
 
-        // Utility methods
         private void PopulateTreeView(string path)
         {
             treeViewJsonFiles.Nodes.Clear();
@@ -413,7 +405,6 @@ namespace FNFNewBot
             }
         }
 
-        // Adjust values methods
         private void AdjustValue(NumericUpDown numericUpDown, bool increase)
         {
             if (increase)
@@ -437,10 +428,9 @@ namespace FNFNewBot
             _logger.Log(logMessage);
         }
 
-        // P/Invoke declarations
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod,
-            uint dwThreadId);
+    uint dwThreadId);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -458,7 +448,6 @@ namespace FNFNewBot
         [DllImport("user32.dll")]
         private static extern uint MapVirtualKey(uint uCode, uint uMapType);
 
-        // Delegate for the low-level keyboard hook
         private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
 
         private static IntPtr SetHook(LowLevelKeyboardProc proc)
