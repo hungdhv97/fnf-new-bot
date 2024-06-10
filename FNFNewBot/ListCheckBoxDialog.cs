@@ -2,13 +2,13 @@
 {
     public partial class ListCheckBoxDialog : Form
     {
-        public ListCheckBoxDialog(List<int> items)
+        public ListCheckBoxDialog(List<string> items)
         {
             InitializeComponent();
             LoadCheckboxes(items);
         }
 
-        private void LoadCheckboxes(List<int> items)
+        private void LoadCheckboxes(List<string> items)
         {
             int yPos = 10;
             int itemHeight = 20;
@@ -28,17 +28,14 @@
             buttonOK.Location = new Point((ClientSize.Width - buttonOK.Width) / 2, yPos);
         }
 
-        public List<int> GetCheckedItems()
+        public List<string> GetCheckedItems()
         {
-            var checkedItems = new List<int>();
+            var checkedItems = new List<string>();
             foreach (var control in Controls)
             {
                 if (control is CheckBox checkbox && checkbox.Checked)
                 {
-                    if (int.TryParse(checkbox.Text, out int value))
-                    {
-                        checkedItems.Add(value);
-                    }
+                    checkedItems.Add(checkbox.Text);
                 }
             }
             return checkedItems;

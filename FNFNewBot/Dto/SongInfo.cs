@@ -13,7 +13,7 @@
         public int Direction { get; set; }
         public double Time { get; set; }
         public double? Length { get; set; }
-        public int? Special { get; set; }
+        public string? Special { get; set; }
         public KeyType KeyType { get; set; }
 
         public static NoteInfo From(Note2 note, KeyType keyType)
@@ -35,7 +35,7 @@
                 Time = Convert.ToDouble(noteData[0]),
                 Length = Convert.ToDouble(noteData[2]),
                 KeyType = keyType,
-                Special = noteData.Length > 3 ? Convert.ToInt32(noteData[3]) : null,
+                Special = noteData.Length > 3 ? Convert.ToString(noteData[3]) : null,
             };
         }
 
@@ -115,20 +115,20 @@
             return this;
         }
 
-        public List<int> GetSpecialNotes()
+        public List<string> GetSpecialNotes()
         {
             return Notes
-                .Where(n => n.Special.HasValue)
-                .Select(n => n.Special!.Value)
+                .Where(n => !string.IsNullOrEmpty(n.Special))
+                .Select(n => n.Special)
                 .Distinct()
                 .OrderBy(special => special)
-                .ToList();
+                .ToList()!;
         }
 
-        public NoteSection ToRemoveDeadNotes(List<int> deadNotes)
+        public NoteSection ToRemoveDeadNotes(List<string> deadNotes)
         {
             Notes = Notes
-                .Where(n => !n.Special.HasValue || !deadNotes.Contains(n.Special.Value))
+                .Where(n => string.IsNullOrEmpty(n.Special) || !deadNotes.Contains(n.Special))
                 .ToList();
             return this;
         }

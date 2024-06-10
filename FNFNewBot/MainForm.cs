@@ -74,8 +74,7 @@ namespace FNFNewBot
             }
 
             _selectedDifficulty = comboBoxDifficulty.SelectedItem.ToString()!;
-            var section = _currentSongInfo!.Sections.FirstOrDefault(s => s.Mode.ToString() == _selectedDifficulty);
-            RemoveSpecialNotes(section!.GetSpecialNotes());
+            RemoveSpecialNotes();
             _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tDifficult Mode: {_selectedDifficulty}");
         }
 
@@ -285,8 +284,7 @@ namespace FNFNewBot
             {
                 comboBoxDifficulty.SelectedIndex = 0;
                 _selectedDifficulty = comboBoxDifficulty.SelectedItem?.ToString()!;
-                NoteSection? section = _currentSongInfo!.Sections.FirstOrDefault(s => s.Mode.ToString() == _selectedDifficulty);
-                RemoveSpecialNotes(section!.GetSpecialNotes());
+                RemoveSpecialNotes();
                 _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tDifficult Mode: {comboBoxDifficulty.SelectedItem}");
             }
         }
@@ -323,11 +321,11 @@ namespace FNFNewBot
                     }
                 }
 
-                _logger.Log($"Error reading JSON file: Unknown format", Color.Red);
+                _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tError reading JSON file: Unknown format", Color.Red);
             }
             catch (Exception ex)
             {
-                _logger.Log($"Error reading JSON file: {ex.Message}", Color.Red);
+                _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tError reading JSON file: {ex.Message}", Color.Red);
             }
         }
 
@@ -342,14 +340,17 @@ namespace FNFNewBot
                 || typeof(T) == typeof(Song3) && jsonObject.ContainsKey("strumLines");
         }
 
-        private void RemoveSpecialNotes(List<int> specialNotes)
+        private void RemoveSpecialNotes()
         {
-            if (specialNotes.Any())
+            var section = _currentSongInfo!.Sections.FirstOrDefault(s => s.Mode.ToString() == _selectedDifficulty);
+            var specialNotes = section!.GetSpecialNotes();
+            if (specialNotes.Count > 0)
             {
                 using var dialog = new ListCheckBoxDialog(specialNotes);
                 if (dialog.ShowDialog(this) != DialogResult.OK) return;
-                var checkedItems = dialog.GetCheckedItems();
-                _logger.Log("Removed special notes: " + string.Join(", ", checkedItems));
+                List<string> deadNotes = dialog.GetCheckedItems();
+                section.ToRemoveDeadNotes(deadNotes);
+                _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tRemoved special notes: " + string.Join(", ", deadNotes));
             }
         }
 
