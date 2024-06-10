@@ -24,6 +24,10 @@ namespace FNFNewBot
         private Song3? _currentSong3;
         private string _selectedDifficulty;
 
+        private const int WH_KEYBOARD_LL = 13;
+        private const int WM_KEYDOWN = 0x0100;
+        private const int WM_KEYUP = 0x0101;
+        
         public MainForm()
         {
             InitializeComponent();
@@ -43,12 +47,11 @@ namespace FNFNewBot
 
         private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
 
-        private const int WH_KEYBOARD_LL = 13;
-        private const int WM_KEYDOWN = 0x0100;
-        private const int WM_KEYUP = 0x0101;
+
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod,
+            uint dwThreadId);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -231,12 +234,16 @@ namespace FNFNewBot
             if (length is > 0)
             {
                 WaitForNanoseconds(Stopwatch.StartNew(), (long)((length.Value + _holdTime) * OneMillion));
-                Log($"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{length.Value + _holdTime}", keyType.Color);
+                Log(
+                    $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{length.Value + _holdTime}",
+                    keyType.Color);
             }
             else
             {
                 WaitForNanoseconds(Stopwatch.StartNew(), _pressTime * OneMillion);
-                Log($"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{_pressTime}", keyType.Color);
+                Log(
+                    $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{_pressTime}",
+                    keyType.Color);
             }
 
             keybd_event(keyType.Code, (byte)scanCode, 2, 0);
@@ -299,27 +306,16 @@ namespace FNFNewBot
         {
             comboBoxDifficulty.Items.Clear();
 
-            var difficultyModes = new Dictionary<DifficultyMode, string>
+            foreach (NoteSection section in noteSections.Where(section => section.Notes.Count != 0))
             {
-                { DifficultyMode.Easy, "Easy" },
-                { DifficultyMode.Normal, "Normal" },
-                { DifficultyMode.Hard, "Hard" },
-                { DifficultyMode.Erect, "Erect" }
-            };
-
-            foreach (var section in noteSections)
-            {
-                if (section.Notes.Any() && difficultyModes.ContainsKey(section.Mode))
-                {
-                    comboBoxDifficulty.Items.Add(difficultyModes[section.Mode]);
-                }
+                comboBoxDifficulty.Items.Add(section.Mode.ToString());
             }
 
             if (comboBoxDifficulty.Items.Count > 0)
             {
                 comboBoxDifficulty.SelectedIndex = 0;
                 _selectedDifficulty = comboBoxDifficulty.SelectedItem?.ToString()!;
-                var section = _currentSongInfo!.Sections.FirstOrDefault(s => s.Mode.ToString() == _selectedDifficulty);
+                NoteSection? section = _currentSongInfo!.Sections.FirstOrDefault(s => s.Mode.ToString() == _selectedDifficulty);
                 RemoveSpecialNotes(section!.GetSpecialNotes());
                 Log($"{DateTime.Now:HH:mm:ss.fff}\tDifficult Mode: {comboBoxDifficulty.SelectedItem}");
             }
@@ -378,7 +374,8 @@ namespace FNFNewBot
                     Log($"Error reading JSON file: Unknown format", Color.Red);
                 }
 
-                Log($"{DateTime.Now:HH:mm:ss.fff}\tSelected chart v{_currentSongInfo.Version}: {fileName}");
+                if (_currentSongInfo != null)
+                    Log($"{DateTime.Now:HH:mm:ss.fff}\tSelected chart v{_currentSongInfo.Version}: {fileName}");
             }
             catch (Exception ex)
             {
@@ -391,7 +388,7 @@ namespace FNFNewBot
             try
             {
                 var jsonObject = JsonConvert.DeserializeObject<JObject>(jsonContent);
-                return jsonObject.ContainsKey("song") && jsonObject["song"]?["notes"] != null;
+                return jsonObject != null && jsonObject.ContainsKey("song") && jsonObject["song"]?["notes"] != null;
             }
             catch
             {
@@ -404,7 +401,7 @@ namespace FNFNewBot
             try
             {
                 var jsonObject = JsonConvert.DeserializeObject<JObject>(jsonContent);
-                return jsonObject.ContainsKey("notes");
+                return jsonObject != null && jsonObject.ContainsKey("notes");
             }
             catch
             {
@@ -417,7 +414,7 @@ namespace FNFNewBot
             try
             {
                 var jsonObject = JsonConvert.DeserializeObject<JObject>(jsonContent);
-                return jsonObject.ContainsKey("strumLines");
+                return jsonObject != null && jsonObject.ContainsKey("strumLines");
             }
             catch
             {
@@ -465,14 +462,14 @@ namespace FNFNewBot
         {
             textBoxKeyMap.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
             textBoxKeyMap.AutoCompleteSource = AutoCompleteSource.CustomSource;
-            AutoCompleteStringCollection keyMapSuggestions = new AutoCompleteStringCollection
-            {
+            AutoCompleteStringCollection keyMapSuggestions =
+            [
                 "left_down_up_right",
                 "a_s_w_d",
                 "a_s_d_left_down_right",
                 "a_s_d_f_space_left_down_up_right",
-                "a_s_d_f_space_h_j_k_l",
-            };
+                "a_s_d_f_space_h_j_k_l"
+            ];
             textBoxKeyMap.AutoCompleteCustomSource = keyMapSuggestions;
         }
 
@@ -492,6 +489,7 @@ namespace FNFNewBot
                 {
                     _keyTypes.Add(KeyType.FromString(key));
                 }
+
                 Log($"{DateTime.Now:HH:mm:ss.fff}\tKeyMap: {string.Join(", ", _keyTypes.Select(k => k.Name))}");
                 UpdateCurrentSongInfo();
             }
@@ -539,6 +537,7 @@ namespace FNFNewBot
                 Log($"{DateTime.Now:HH:mm:ss.fff}\tPlease choose chart");
                 return;
             }
+
             _selectedDifficulty = comboBoxDifficulty.SelectedItem.ToString()!;
             var section = _currentSongInfo!.Sections.FirstOrDefault(s => s.Mode.ToString() == _selectedDifficulty);
             RemoveSpecialNotes(section!.GetSpecialNotes());
@@ -549,14 +548,10 @@ namespace FNFNewBot
         {
             if (specialNotes.Any())
             {
-                using (var dialog = new ListCheckBoxDialog(specialNotes))
-                {
-                    if (dialog.ShowDialog(this) == DialogResult.OK)
-                    {
-                        var checkedItems = dialog.GetCheckedItems();
-                        Log("Removed special notes: " + string.Join(", ", checkedItems));
-                    }
-                }
+                using var dialog = new ListCheckBoxDialog(specialNotes);
+                if (dialog.ShowDialog(this) != DialogResult.OK) return;
+                var checkedItems = dialog.GetCheckedItems();
+                Log("Removed special notes: " + string.Join(", ", checkedItems));
             }
         }
     }
