@@ -218,17 +218,13 @@ namespace FNFNewBot
 
             if (length is > 0)
             {
+                _logger.Log($"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{length.Value + (int)nUDHoldTime.Value}", keyType.Color);
                 WaitForNanoseconds(Stopwatch.StartNew(), (long)((length.Value + (int)nUDHoldTime.Value) * OneMillion));
-                _logger.Log(
-                    $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{length.Value + (int)nUDHoldTime.Value}",
-                    keyType.Color);
             }
             else
             {
+                _logger.Log($"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{nUDPressTime.Value}", keyType.Color);
                 WaitForNanoseconds(Stopwatch.StartNew(), (int)nUDPressTime.Value * OneMillion);
-                _logger.Log(
-                    $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{nUDPressTime.Value}",
-                    keyType.Color);
             }
 
             keybd_event(keyType.Code, (byte)scanCode, 2, 0);
@@ -302,46 +298,32 @@ namespace FNFNewBot
                 string fileName = Path.GetFileNameWithoutExtension(filePath);
                 string jsonContent = File.ReadAllText(filePath);
 
-                if (IsValidSong1(jsonContent))
+                var songHandlers = new Dictionary<int, Func<string, bool>>
                 {
-                    var song1 = JsonConvert.DeserializeObject<Song1>(jsonContent);
-                    if (song1 != null)
+                    { 1, content => TryDeserializeSong<Song1>(content, out _currentSong1) },
+                    { 2, content => TryDeserializeSong<Song2>(content, out _currentSong2) },
+                    { 3, content => TryDeserializeSong<Song3>(content, out _currentSong3) }
+                };
+
+                foreach (var handler in songHandlers)
+                {
+                    if (handler.Value(jsonContent))
                     {
-                        _currentSong1 = song1;
-                        _currentSongInfo = SongInfo.From(fileName, _currentSong1, _keyTypes);
-                        PopulateDifficultyComboBox(_currentSongInfo.Sections);
+                        _currentSongInfo = handler.Key switch
+                        {
+                            1 => SongInfo.From(fileName, _currentSong1!, _keyTypes),
+                            2 => SongInfo.From(fileName, _currentSong2!, _keyTypes),
+                            3 => SongInfo.From(fileName, _currentSong3!, _keyTypes),
+                            _ => _currentSongInfo
+                        };
+
+                        PopulateDifficultyComboBox(_currentSongInfo!.Sections);
+                        _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tSelected chart v{_currentSongInfo.Version}: {fileName}");
                         return;
                     }
-                }
-                else if (IsValidSong2(jsonContent))
-                {
-                    var song2 = JsonConvert.DeserializeObject<Song2>(jsonContent);
-                    if (song2 != null)
-                    {
-                        _currentSong2 = song2;
-                        _currentSongInfo = SongInfo.From(fileName, _currentSong2, _keyTypes);
-                        PopulateDifficultyComboBox(_currentSongInfo.Sections);
-                        return;
-                    }
-                }
-                else if (IsValidSong3(jsonContent))
-                {
-                    var song3 = JsonConvert.DeserializeObject<Song3>(jsonContent);
-                    if (song3 != null)
-                    {
-                        _currentSong3 = song3;
-                        _currentSongInfo = SongInfo.From(fileName, _currentSong3, _keyTypes);
-                        PopulateDifficultyComboBox(_currentSongInfo.Sections);
-                        return;
-                    }
-                }
-                else
-                {
-                    _logger.Log($"Error reading JSON file: Unknown format", Color.Red);
                 }
 
-                if (_currentSongInfo != null)
-                    _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tSelected chart v{_currentSongInfo.Version}: {fileName}");
+                _logger.Log($"Error reading JSON file: Unknown format", Color.Red);
             }
             catch (Exception ex)
             {
@@ -349,43 +331,15 @@ namespace FNFNewBot
             }
         }
 
-        private bool IsValidSong1(string jsonContent)
+        private bool TryDeserializeSong<T>(string jsonContent, out T? song) where T : class
         {
-            try
-            {
-                var jsonObject = JsonConvert.DeserializeObject<JObject>(jsonContent);
-                return jsonObject != null && jsonObject.ContainsKey("song") && jsonObject["song"]?["notes"] != null;
-            }
-            catch
-            {
-                return false;
-            }
-        }
+            song = JsonConvert.DeserializeObject<T>(jsonContent);
+            if (song == null) return false;
 
-        private bool IsValidSong2(string jsonContent)
-        {
-            try
-            {
-                var jsonObject = JsonConvert.DeserializeObject<JObject>(jsonContent);
-                return jsonObject != null && jsonObject.ContainsKey("notes");
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private bool IsValidSong3(string jsonContent)
-        {
-            try
-            {
-                var jsonObject = JsonConvert.DeserializeObject<JObject>(jsonContent);
-                return jsonObject != null && jsonObject.ContainsKey("strumLines");
-            }
-            catch
-            {
-                return false;
-            }
+            var jsonObject = JObject.Parse(jsonContent);
+            return typeof(T) == typeof(Song1) && jsonObject.ContainsKey("song") && jsonObject["song"]?["notes"] != null
+                || typeof(T) == typeof(Song2) && jsonObject.ContainsKey("notes")
+                || typeof(T) == typeof(Song3) && jsonObject.ContainsKey("strumLines");
         }
 
         private void RemoveSpecialNotes(List<int> specialNotes)
