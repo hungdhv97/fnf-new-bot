@@ -1,4 +1,5 @@
 ﻿using FNFNewBot.Dto;
+using FNFNewBot.Logger;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
@@ -8,31 +9,37 @@ namespace FNFNewBot
 {
     public partial class MainForm : Form
     {
+        // Constants and static variables
         private const long OneMillion = 1_000_000;
-        private IntPtr _hookId = IntPtr.Zero;
-        private LowLevelKeyboardProc _proc;
+        private const int WH_KEYBOARD_LL = 13;
+        private const int WM_KEYDOWN = 0x0100;
+        private const int WM_KEYUP = 0x0101;
         private static List<KeyType> _keyTypes = new();
-        private Stopwatch _stopwatch;
-        private bool _isExecuting;
-        private bool _isClosing;
         private static int _salt;
         private static int _pressTime;
         private static int _holdTime;
+
+        // Instance variables
+        private IntPtr _hookId = IntPtr.Zero;
+        private LowLevelKeyboardProc _proc;
+        private Stopwatch _stopwatch;
+        private bool _isExecuting;
+        private bool _isClosing;
         private SongInfo? _currentSongInfo;
         private Song1? _currentSong1;
         private Song2? _currentSong2;
         private Song3? _currentSong3;
         private string _selectedDifficulty;
+        private RichTextBoxLogger _logger;
 
-        private const int WH_KEYBOARD_LL = 13;
-        private const int WM_KEYDOWN = 0x0100;
-        private const int WM_KEYUP = 0x0101;
-        
+        // Constructor
         public MainForm()
         {
             InitializeComponent();
+            _logger = new RichTextBoxLogger(logRichTextBox); // Initialize logger here
         }
 
+        // Form events
         private void MainForm_Load(object sender, EventArgs e)
         {
             _proc = HookCallback;
@@ -45,122 +52,113 @@ namespace FNFNewBot
             ChangeKeyTypes(textBoxKeyMap.Text);
         }
 
-        private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
-
-
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod,
-            uint dwThreadId);
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool UnhookWindowsHookEx(IntPtr hhk);
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr GetModuleHandle(string lpModuleName);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
-
-        [DllImport("user32.dll")]
-        private static extern uint MapVirtualKey(uint uCode, uint uMapType);
-
-        private static IntPtr SetHook(LowLevelKeyboardProc proc)
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            using Process curProcess = Process.GetCurrentProcess();
-            using ProcessModule curModule = curProcess.MainModule!;
-            return SetWindowsHookEx(WH_KEYBOARD_LL, proc, GetModuleHandle(curModule.ModuleName), 0);
+            _isClosing = true;
+            UnhookWindowsHookEx(_hookId);
         }
 
-        private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+        // Event handlers
+        private void buttonChooseFolder_Click(object sender, EventArgs e)
         {
-            if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN)
+            using FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+            if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
             {
-                int vkCode = Marshal.ReadInt32(lParam);
-                Keys key = (Keys)vkCode;
+                string selectedPath = folderBrowserDialog.SelectedPath;
+                textBoxFolder.Text = selectedPath;
+                PopulateTreeView(selectedPath);
+            }
+        }
 
-                if (key == Keys.Escape)
-                {
-                    _isClosing = true && _isExecuting;
-                }
-                else if (key == Keys.D9)
-                {
-                    ExecuteNotesInParallelAsync();
-                }
-                else if (key == Keys.D1)
-                {
-                    DecrementSalt();
-                }
-                else if (key == Keys.D2)
-                {
-                    IncrementSalt();
-                }
-                else if (key == Keys.D3)
-                {
-                    DecreasePressTime();
-                }
-                else if (key == Keys.D4)
-                {
-                    IncreasePressTime();
-                }
-                else if (key == Keys.D5)
-                {
-                    DecreaseHoldTime();
-                }
-                else if (key == Keys.D6)
-                {
-                    IncreaseHoldTime();
-                }
+        private void buttonChangeKeyMap_Click(object sender, EventArgs e)
+        {
+            string input = textBoxKeyMap.Text;
+            ChangeKeyTypes(input);
+        }
+
+        private void buttonChangeDifficulty_Click(object sender, EventArgs e)
+        {
+            if (comboBoxDifficulty.SelectedItem == null)
+            {
+                _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tPlease choose chart");
+                return;
             }
 
-            return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
+            _selectedDifficulty = comboBoxDifficulty.SelectedItem.ToString()!;
+            var section = _currentSongInfo!.Sections.FirstOrDefault(s => s.Mode.ToString() == _selectedDifficulty);
+            RemoveSpecialNotes(section!.GetSpecialNotes());
+            _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tDifficult Mode: {_selectedDifficulty}");
         }
 
-        private void IncrementSalt()
+        private void treeViewJsonFiles_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
         {
-            if (nUDSalt.Value < nUDSalt.Maximum) nUDSalt.Value += (int)nUDSalt.Increment;
+            if (e.Node.Tag is string filePath && filePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            {
+                ReadJsonFile(filePath);
+            }
         }
 
-        private void DecrementSalt()
+        // Initialization and setup methods
+        private void SetupAutoComplete()
         {
-            if (nUDSalt.Value > nUDSalt.Minimum) nUDSalt.Value -= (int)nUDSalt.Increment;
+            textBoxKeyMap.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+            textBoxKeyMap.AutoCompleteSource = AutoCompleteSource.CustomSource;
+            AutoCompleteStringCollection keyMapSuggestions = new AutoCompleteStringCollection
+            {
+                "left_down_up_right",
+                "a_s_w_d",
+                "a_s_d_left_down_right",
+                "a_s_d_f_space_left_down_up_right",
+                "a_s_d_f_space_h_j_k_l"
+            };
+            textBoxKeyMap.AutoCompleteCustomSource = keyMapSuggestions;
         }
 
-        private void IncreasePressTime()
+        private void ChangeKeyTypes(string input)
         {
-            if (nUDPressTime.Value < nUDPressTime.Maximum) nUDPressTime.Value += (int)nUDPressTime.Increment;
+            try
+            {
+                string[] keys = input.Split('_');
+                _keyTypes.Clear();
+                foreach (var key in keys)
+                {
+                    _keyTypes.Add(KeyType.FromString(key));
+                }
+
+                _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tKeyMap: {string.Join(", ", _keyTypes.Select(k => k.Name))}");
+                UpdateCurrentSongInfo();
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.Log("Error: " + ex.Message, Color.Red);
+            }
         }
 
-        private void DecreasePressTime()
+        private void UpdateCurrentSongInfo()
         {
-            if (nUDPressTime.Value > nUDPressTime.Minimum) nUDPressTime.Value -= (int)nUDPressTime.Increment;
+            if (_currentSongInfo == null) return;
+
+            _currentSongInfo = _currentSongInfo.Version switch
+            {
+                1 when _currentSong1 != null => SongInfo.From(_currentSongInfo.Name, _currentSong1, _keyTypes),
+                2 when _currentSong2 != null => SongInfo.From(_currentSongInfo.Name, _currentSong2, _keyTypes),
+                3 when _currentSong3 != null => SongInfo.From(_currentSongInfo.Name, _currentSong3, _keyTypes),
+                _ => _currentSongInfo
+            };
         }
 
-        private void IncreaseHoldTime()
-        {
-            if (nUDHoldTime.Value < nUDHoldTime.Maximum) nUDHoldTime.Value += (int)nUDHoldTime.Increment;
-        }
-
-        private void DecreaseHoldTime()
-        {
-            if (nUDHoldTime.Value > nUDHoldTime.Minimum) nUDHoldTime.Value -= (int)nUDHoldTime.Increment;
-        }
-
+        // Main methods
         private async void ExecuteNotesInParallelAsync()
         {
             if (_isExecuting)
             {
-                Log($"{DateTime.Now:HH:mm:ss.fff}\tRunning");
+                _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tRunning");
                 return;
             }
 
             if (_currentSongInfo == null)
             {
-                Log($"{DateTime.Now:HH:mm:ss.fff}\tPlease choose song");
+                _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tPlease choose song");
                 return;
             }
 
@@ -168,18 +166,18 @@ namespace FNFNewBot
 
             if (notes.Count == 0)
             {
-                Log($"{DateTime.Now:HH:mm:ss.fff}\tNo notes available for the selected difficulty", Color.Red);
+                _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tNo notes available for the selected difficulty", Color.Red);
                 return;
             }
 
-            Log($"{DateTime.Now:HH:mm:ss.fff}\tStart");
+            _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tStart");
 
             _isExecuting = true;
             await Task.Run(() => ExecuteNotesInParallel(notes));
             _isExecuting = false;
             _isClosing = false;
 
-            Log($"{DateTime.Now:HH:mm:ss.fff}\tStop");
+            _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tStop");
         }
 
         private List<NoteInfo> GetNotesForDifficulty(string difficulty)
@@ -205,7 +203,7 @@ namespace FNFNewBot
             }
             catch (AggregateException ex)
             {
-                Log($"Execution cancelled: {ex.Message}");
+                _logger.Log($"Execution cancelled: {ex.Message}");
             }
         }
 
@@ -234,14 +232,14 @@ namespace FNFNewBot
             if (length is > 0)
             {
                 WaitForNanoseconds(Stopwatch.StartNew(), (long)((length.Value + _holdTime) * OneMillion));
-                Log(
+                _logger.Log(
                     $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{length.Value + _holdTime}",
                     keyType.Color);
             }
             else
             {
                 WaitForNanoseconds(Stopwatch.StartNew(), _pressTime * OneMillion);
-                Log(
+                _logger.Log(
                     $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{_pressTime}",
                     keyType.Color);
             }
@@ -259,17 +257,7 @@ namespace FNFNewBot
             }
         }
 
-        private void buttonChooseFolder_Click(object sender, EventArgs e)
-        {
-            using FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
-            if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
-            {
-                string selectedPath = folderBrowserDialog.SelectedPath;
-                textBoxFolder.Text = selectedPath;
-                PopulateTreeView(selectedPath);
-            }
-        }
-
+        // Utility methods
         private void PopulateTreeView(string path)
         {
             treeViewJsonFiles.Nodes.Clear();
@@ -317,15 +305,7 @@ namespace FNFNewBot
                 _selectedDifficulty = comboBoxDifficulty.SelectedItem?.ToString()!;
                 NoteSection? section = _currentSongInfo!.Sections.FirstOrDefault(s => s.Mode.ToString() == _selectedDifficulty);
                 RemoveSpecialNotes(section!.GetSpecialNotes());
-                Log($"{DateTime.Now:HH:mm:ss.fff}\tDifficult Mode: {comboBoxDifficulty.SelectedItem}");
-            }
-        }
-
-        private void treeViewJsonFiles_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
-        {
-            if (e.Node.Tag is string filePath && filePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
-            {
-                ReadJsonFile(filePath);
+                _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tDifficult Mode: {comboBoxDifficulty.SelectedItem}");
             }
         }
 
@@ -371,15 +351,15 @@ namespace FNFNewBot
                 }
                 else
                 {
-                    Log($"Error reading JSON file: Unknown format", Color.Red);
+                    _logger.Log($"Error reading JSON file: Unknown format", Color.Red);
                 }
 
                 if (_currentSongInfo != null)
-                    Log($"{DateTime.Now:HH:mm:ss.fff}\tSelected chart v{_currentSongInfo.Version}: {fileName}");
+                    _logger.Log($"{DateTime.Now:HH:mm:ss.fff}\tSelected chart v{_currentSongInfo.Version}: {fileName}");
             }
             catch (Exception ex)
             {
-                Log($"Error reading JSON file: {ex.Message}", Color.Red);
+                _logger.Log($"Error reading JSON file: {ex.Message}", Color.Red);
             }
         }
 
@@ -422,128 +402,6 @@ namespace FNFNewBot
             }
         }
 
-        private void Log(string message, Color? color = null)
-        {
-            if (logTextBox.InvokeRequired)
-            {
-                logTextBox.Invoke(new Action<string, Color?>(Log), message, color);
-            }
-            else
-            {
-                AppendLogMessage(message, color);
-            }
-        }
-
-        private void AppendLogMessage(string message, Color? color)
-        {
-            if (color.HasValue)
-            {
-                logTextBox.SelectionStart = logTextBox.TextLength;
-                logTextBox.SelectionLength = 0;
-                logTextBox.SelectionColor = color.Value;
-            }
-
-            logTextBox.AppendText(message + Environment.NewLine);
-            if (color.HasValue)
-            {
-                logTextBox.SelectionColor = logTextBox.ForeColor;
-            }
-
-            logTextBox.ScrollToCaret();
-        }
-
-        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            _isClosing = true;
-            UnhookWindowsHookEx(_hookId);
-        }
-
-        private void SetupAutoComplete()
-        {
-            textBoxKeyMap.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
-            textBoxKeyMap.AutoCompleteSource = AutoCompleteSource.CustomSource;
-            AutoCompleteStringCollection keyMapSuggestions =
-            [
-                "left_down_up_right",
-                "a_s_w_d",
-                "a_s_d_left_down_right",
-                "a_s_d_f_space_left_down_up_right",
-                "a_s_d_f_space_h_j_k_l"
-            ];
-            textBoxKeyMap.AutoCompleteCustomSource = keyMapSuggestions;
-        }
-
-        private void buttonChangeKeyMap_Click(object sender, EventArgs e)
-        {
-            string input = textBoxKeyMap.Text;
-            ChangeKeyTypes(input);
-        }
-
-        private void ChangeKeyTypes(string input)
-        {
-            try
-            {
-                string[] keys = input.Split('_');
-                _keyTypes.Clear();
-                foreach (var key in keys)
-                {
-                    _keyTypes.Add(KeyType.FromString(key));
-                }
-
-                Log($"{DateTime.Now:HH:mm:ss.fff}\tKeyMap: {string.Join(", ", _keyTypes.Select(k => k.Name))}");
-                UpdateCurrentSongInfo();
-            }
-            catch (ArgumentException ex)
-            {
-                Log("Error: " + ex.Message);
-            }
-        }
-
-        private void UpdateCurrentSongInfo()
-        {
-            if (_currentSongInfo == null) return;
-
-            _currentSongInfo = _currentSongInfo.Version switch
-            {
-                1 when _currentSong1 != null => SongInfo.From(_currentSongInfo.Name, _currentSong1, _keyTypes),
-                2 when _currentSong2 != null => SongInfo.From(_currentSongInfo.Name, _currentSong2, _keyTypes),
-                3 when _currentSong3 != null => SongInfo.From(_currentSongInfo.Name, _currentSong3, _keyTypes),
-                _ => _currentSongInfo
-            };
-        }
-
-        private void nUDSalt_ValueChanged(object sender, EventArgs e)
-        {
-            _salt = (int)nUDSalt.Value;
-            Log($"Salt: {_salt} ms");
-        }
-
-        private void nUDPressTime_ValueChanged(object sender, EventArgs e)
-        {
-            _pressTime = (int)nUDPressTime.Value;
-            Log($"Press Time: {_pressTime} ms");
-        }
-
-        private void nUDHoldTime_ValueChanged(object sender, EventArgs e)
-        {
-            _holdTime = (int)nUDHoldTime.Value;
-            Log($"Hold Time: {_holdTime} ms");
-        }
-
-        private void buttonChangeDifficulty_Click(object sender, EventArgs e)
-        {
-            if (comboBoxDifficulty.SelectedItem == null)
-            {
-                Log($"{DateTime.Now:HH:mm:ss.fff}\tPlease choose chart");
-                return;
-            }
-
-            _selectedDifficulty = comboBoxDifficulty.SelectedItem.ToString()!;
-            var section = _currentSongInfo!.Sections.FirstOrDefault(s => s.Mode.ToString() == _selectedDifficulty);
-            RemoveSpecialNotes(section!.GetSpecialNotes());
-            Log($"{DateTime.Now:HH:mm:ss.fff}\tDifficult Mode: {_selectedDifficulty}");
-        }
-
         private void RemoveSpecialNotes(List<int> specialNotes)
         {
             if (specialNotes.Any())
@@ -551,8 +409,102 @@ namespace FNFNewBot
                 using var dialog = new ListCheckBoxDialog(specialNotes);
                 if (dialog.ShowDialog(this) != DialogResult.OK) return;
                 var checkedItems = dialog.GetCheckedItems();
-                Log("Removed special notes: " + string.Join(", ", checkedItems));
+                _logger.Log("Removed special notes: " + string.Join(", ", checkedItems));
             }
+        }
+
+        // Adjust values methods
+        private void AdjustValue(NumericUpDown numericUpDown, bool increase)
+        {
+            if (increase)
+            {
+                if (numericUpDown.Value < numericUpDown.Maximum)
+                {
+                    numericUpDown.Value += numericUpDown.Increment;
+                }
+            }
+            else
+            {
+                if (numericUpDown.Value > numericUpDown.Minimum)
+                {
+                    numericUpDown.Value -= numericUpDown.Increment;
+                }
+            }
+
+            string logMessage = numericUpDown == nUDSalt ? $"Salt: {numericUpDown.Value}" :
+                                numericUpDown == nUDPressTime ? $"Press Time: {numericUpDown.Value} ms" :
+                                $"Hold Time: {numericUpDown.Value} ms";
+            _logger.Log(logMessage);
+        }
+
+        // P/Invoke declarations
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod,
+            uint dwThreadId);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr GetModuleHandle(string lpModuleName);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+
+        [DllImport("user32.dll")]
+        private static extern uint MapVirtualKey(uint uCode, uint uMapType);
+
+        // Delegate for the low-level keyboard hook
+        private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+        private static IntPtr SetHook(LowLevelKeyboardProc proc)
+        {
+            using Process curProcess = Process.GetCurrentProcess();
+            using ProcessModule curModule = curProcess.MainModule!;
+            return SetWindowsHookEx(WH_KEYBOARD_LL, proc, GetModuleHandle(curModule.ModuleName), 0);
+        }
+
+        private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+        {
+            if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN)
+            {
+                int vkCode = Marshal.ReadInt32(lParam);
+                Keys key = (Keys)vkCode;
+
+                switch (key)
+                {
+                    case Keys.Escape:
+                        _isClosing = _isExecuting;
+                        break;
+                    case Keys.D9:
+                        ExecuteNotesInParallelAsync();
+                        break;
+                    case Keys.D1:
+                        AdjustValue(nUDSalt, false);
+                        break;
+                    case Keys.D2:
+                        AdjustValue(nUDSalt, true);
+                        break;
+                    case Keys.D3:
+                        AdjustValue(nUDPressTime, false);
+                        break;
+                    case Keys.D4:
+                        AdjustValue(nUDPressTime, true);
+                        break;
+                    case Keys.D5:
+                        AdjustValue(nUDHoldTime, false);
+                        break;
+                    case Keys.D6:
+                        AdjustValue(nUDHoldTime, true);
+                        break;
+                }
+            }
+
+            return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
         }
     }
 }

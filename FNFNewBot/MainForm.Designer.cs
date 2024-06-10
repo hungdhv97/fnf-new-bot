@@ -31,7 +31,7 @@
             textBoxFolder = new TextBox();
             buttonChooseFolder = new Button();
             treeViewJsonFiles = new TreeView();
-            logTextBox = new RichTextBox();
+            logRichTextBox = new RichTextBox();
             comboBoxDifficulty = new ComboBox();
             textBoxKeyMap = new TextBox();
             label1 = new Label();
@@ -75,15 +75,15 @@
             treeViewJsonFiles.TabIndex = 2;
             treeViewJsonFiles.NodeMouseDoubleClick += treeViewJsonFiles_NodeMouseDoubleClick;
             // 
-            // logTextBox
+            // logRichTextBox
             // 
-            logTextBox.Location = new Point(381, 43);
-            logTextBox.Name = "logTextBox";
-            logTextBox.ReadOnly = true;
-            logTextBox.Size = new Size(352, 395);
-            logTextBox.TabIndex = 3;
-            logTextBox.Text = "";
-            logTextBox.WordWrap = false;
+            logRichTextBox.Location = new Point(381, 43);
+            logRichTextBox.Name = "logRichTextBox";
+            logRichTextBox.ReadOnly = true;
+            logRichTextBox.Size = new Size(352, 395);
+            logRichTextBox.TabIndex = 3;
+            logRichTextBox.Text = "";
+            logRichTextBox.WordWrap = false;
             // 
             // comboBoxDifficulty
             // 
@@ -149,7 +149,6 @@
             nUDSalt.Size = new Size(71, 23);
             nUDSalt.TabIndex = 10;
             nUDSalt.TextAlign = HorizontalAlignment.Center;
-            nUDSalt.ValueChanged += nUDSalt_ValueChanged;
             // 
             // buttonChooseDifficulty
             // 
@@ -172,7 +171,6 @@
             nUDPressTime.TabIndex = 16;
             nUDPressTime.TextAlign = HorizontalAlignment.Center;
             nUDPressTime.Value = new decimal(new int[] { 50, 0, 0, 0 });
-            nUDPressTime.ValueChanged += nUDPressTime_ValueChanged;
             // 
             // label4
             // 
@@ -193,7 +191,6 @@
             nUDHoldTime.Size = new Size(71, 23);
             nUDHoldTime.TabIndex = 18;
             nUDHoldTime.TextAlign = HorizontalAlignment.Center;
-            nUDHoldTime.ValueChanged += nUDHoldTime_ValueChanged;
             // 
             // label5
             // 
@@ -221,7 +218,7 @@
             Controls.Add(label1);
             Controls.Add(textBoxKeyMap);
             Controls.Add(comboBoxDifficulty);
-            Controls.Add(logTextBox);
+            Controls.Add(logRichTextBox);
             Controls.Add(treeViewJsonFiles);
             Controls.Add(buttonChooseFolder);
             Controls.Add(textBoxFolder);
@@ -242,7 +239,7 @@
         private TextBox textBoxFolder;
         private Button buttonChooseFolder;
         private TreeView treeViewJsonFiles;
-        private RichTextBox logTextBox;
+        private RichTextBox logRichTextBox;
         private ComboBox comboBoxDifficulty;
         private TextBox textBoxKeyMap;
         private Label label1;

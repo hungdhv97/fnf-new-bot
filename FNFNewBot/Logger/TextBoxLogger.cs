@@ -1,41 +1,42 @@
-namespace FNFNewBot.Logger;
-
-public class TextBoxLogger : ILogger
+namespace FNFNewBot.Logger
 {
-    private readonly TextBox _logTextBox;
-
-    public TextBoxLogger(TextBox logTextBox)
+    public class RichTextBoxLogger : ILogger
     {
-        _logTextBox = logTextBox;
-    }
+        private readonly RichTextBox _logRichTextBox;
 
-    public void Log(string message, Color? color = null)
-    {
-        if (_logTextBox.InvokeRequired)
+        public RichTextBoxLogger(RichTextBox logRichTextBox)
         {
-            _logTextBox.Invoke(new Action<string, Color?>(Log), message, color);
-        }
-        else
-        {
-            AppendLogMessage(message, color);
-        }
-    }
-
-    private void AppendLogMessage(string message, Color? color)
-    {
-        if (color.HasValue)
-        {
-            _logTextBox.SelectionStart = _logTextBox.TextLength;
-            _logTextBox.SelectionLength = 0;
-            _logTextBox.SelectionColor = color.Value;
+            _logRichTextBox = logRichTextBox;
         }
 
-        _logTextBox.AppendText(message + Environment.NewLine);
-        if (color.HasValue)
+        public void Log(string message, Color? color = null)
         {
-            _logTextBox.SelectionColor = _logTextBox.ForeColor;
+            if (_logRichTextBox.InvokeRequired)
+            {
+                _logRichTextBox.Invoke(new Action<string, Color?>(Log), message, color);
+            }
+            else
+            {
+                AppendLogMessage(message, color);
+            }
         }
 
-        _logTextBox.ScrollToCaret();
+        private void AppendLogMessage(string message, Color? color)
+        {
+            if (color.HasValue)
+            {
+                _logRichTextBox.SelectionStart = _logRichTextBox.TextLength;
+                _logRichTextBox.SelectionLength = 0;
+                _logRichTextBox.SelectionColor = color.Value;
+            }
+
+            _logRichTextBox.AppendText(message + Environment.NewLine);
+            if (color.HasValue)
+            {
+                _logRichTextBox.SelectionColor = _logRichTextBox.ForeColor;
+            }
+
+            _logRichTextBox.ScrollToCaret();
+        }
     }
 }
