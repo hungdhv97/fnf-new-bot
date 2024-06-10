@@ -184,7 +184,7 @@
             // nUDHoldTime
             // 
             nUDHoldTime.Increment = new decimal(new int[] { 10, 0, 0, 0 });
-            nUDHoldTime.Location = new Point(73, 129);
+            nUDHoldTime.Location = new Point(112, 129);
             nUDHoldTime.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
             nUDHoldTime.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
             nUDHoldTime.Name = "nUDHoldTime";
@@ -197,9 +197,9 @@
             label5.AutoSize = true;
             label5.Location = new Point(12, 133);
             label5.Name = "label5";
-            label5.Size = new Size(62, 15);
+            label5.Size = new Size(87, 15);
             label5.TabIndex = 17;
-            label5.Text = "Hold Time";
+            label5.Text = "Hold Time Plus";
             // 
             // MainForm
             // 

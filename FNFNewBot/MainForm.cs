@@ -14,9 +14,6 @@ namespace FNFNewBot
         private const int WM_KEYDOWN = 0x0100;
         private const int WM_KEYUP = 0x0101;
         private static List<KeyType> _keyTypes = new();
-        private static int _salt;
-        private static int _pressTime;
-        private static int _holdTime;
 
         private IntPtr _hookId = IntPtr.Zero;
         private LowLevelKeyboardProc _proc;
@@ -41,9 +38,6 @@ namespace FNFNewBot
             _proc = HookCallback;
             _hookId = SetHook(_proc);
 
-            _salt = (int)nUDSalt.Value;
-            _pressTime = (int)nUDPressTime.Value;
-            _holdTime = (int)nUDHoldTime.Value;
             SetupAutoComplete();
             ChangeKeyTypes(textBoxKeyMap.Text);
         }
@@ -224,16 +218,16 @@ namespace FNFNewBot
 
             if (length is > 0)
             {
-                WaitForNanoseconds(Stopwatch.StartNew(), (long)((length.Value + _holdTime) * OneMillion));
+                WaitForNanoseconds(Stopwatch.StartNew(), (long)((length.Value + (int)nUDHoldTime.Value) * OneMillion));
                 _logger.Log(
-                    $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{length.Value + _holdTime}",
+                    $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{length.Value + (int)nUDHoldTime.Value}",
                     keyType.Color);
             }
             else
             {
-                WaitForNanoseconds(Stopwatch.StartNew(), _pressTime * OneMillion);
+                WaitForNanoseconds(Stopwatch.StartNew(), (int)nUDPressTime.Value * OneMillion);
                 _logger.Log(
-                    $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{_pressTime}",
+                    $"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{nUDPressTime.Value}",
                     keyType.Color);
             }
 
@@ -243,7 +237,7 @@ namespace FNFNewBot
         private void WaitForNanoseconds(Stopwatch stopwatch, long nanoseconds)
         {
             long targetTicks = (long)(nanoseconds * 0.01);
-            while (stopwatch.ElapsedTicks < targetTicks + _salt * 10_000)
+            while (stopwatch.ElapsedTicks < targetTicks + (int)nUDSalt.Value * 10_000)
             {
                 if (_isClosing) break;
                 Thread.SpinWait(1);
@@ -429,8 +423,7 @@ namespace FNFNewBot
         }
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod,
-    uint dwThreadId);
+        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
