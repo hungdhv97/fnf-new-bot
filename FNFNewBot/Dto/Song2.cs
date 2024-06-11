@@ -22,6 +22,7 @@ public class Difficulty2
     [JsonProperty("normal")] public List<Note2> Normal { get; set; } = new();
 
     [JsonProperty("erect")] public List<Note2> Erect { get; set; } = new();
+    [JsonProperty("nightmare")] public List<Note2> Nightmare { get; set; } = new();
 }
 
 public class Song2

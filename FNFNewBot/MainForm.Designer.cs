@@ -144,7 +144,6 @@
             nUDSalt.Increment = new decimal(new int[] { 10, 0, 0, 0 });
             nUDSalt.Location = new Point(73, 100);
             nUDSalt.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
-            nUDSalt.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
             nUDSalt.Name = "nUDSalt";
             nUDSalt.Size = new Size(71, 23);
             nUDSalt.TabIndex = 10;
@@ -163,9 +162,8 @@
             // nUDPressTime
             // 
             nUDPressTime.Increment = new decimal(new int[] { 10, 0, 0, 0 });
-            nUDPressTime.Location = new Point(235, 100);
+            nUDPressTime.Location = new Point(304, 100);
             nUDPressTime.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
-            nUDPressTime.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
             nUDPressTime.Name = "nUDPressTime";
             nUDPressTime.Size = new Size(71, 23);
             nUDPressTime.TabIndex = 16;
@@ -177,14 +175,14 @@
             label4.AutoSize = true;
             label4.Location = new Point(166, 104);
             label4.Name = "label4";
-            label4.Size = new Size(63, 15);
+            label4.Size = new Size(128, 15);
             label4.TabIndex = 15;
-            label4.Text = "Press Time";
+            label4.Text = "Normal Key Press Time";
             // 
             // nUDHoldTime
             // 
             nUDHoldTime.Increment = new decimal(new int[] { 10, 0, 0, 0 });
-            nUDHoldTime.Location = new Point(112, 129);
+            nUDHoldTime.Location = new Point(80, 129);
             nUDHoldTime.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
             nUDHoldTime.Minimum = new decimal(new int[] { 1000, 0, 0, int.MinValue });
             nUDHoldTime.Name = "nUDHoldTime";
@@ -197,9 +195,9 @@
             label5.AutoSize = true;
             label5.Location = new Point(12, 133);
             label5.Name = "label5";
-            label5.Size = new Size(87, 15);
+            label5.Size = new Size(62, 15);
             label5.TabIndex = 17;
-            label5.Text = "Hold Time Plus";
+            label5.Text = "Hold Time";
             // 
             // MainForm
             // 

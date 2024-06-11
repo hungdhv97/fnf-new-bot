@@ -41,7 +41,7 @@
             buttonOK.UseVisualStyleBackColor = true;
             buttonOK.Click += buttonOK_Click;
             // 
-            // RemoveDeadNotesDialog
+            // ListCheckBoxDialog
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -50,7 +50,7 @@
             FormBorderStyle = FormBorderStyle.FixedDialog;
             Name = "ListCheckBoxDialog";
             StartPosition = FormStartPosition.CenterParent;
-            Text = "RemoveDeadNotes";
+            Text = "Remove Dead Notes";
             ResumeLayout(false);
         }
 

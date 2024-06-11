@@ -7,7 +7,8 @@ namespace FNFNewBot.Dto
         Easy,
         Normal,
         Hard,
-        Erect
+        Erect,
+        Nightmare,
     }
 
     public class NoteInfo
@@ -18,6 +19,7 @@ namespace FNFNewBot.Dto
         public int Direction { get; set; }
         public double Time { get; set; }
         public double? Length { get; set; }
+        public double LengthLimit { get; set; }
         public string? Special { get; set; }
         public KeyType KeyType { get; set; }
         public uint ScanCode { get; set; }
@@ -67,7 +69,7 @@ namespace FNFNewBot.Dto
 
         public static NoteSection From(List<Note2> notes, DifficultyMode mode, List<KeyType> keyTypes)
         {
-            return new NoteSection
+            var noteSection = new NoteSection
             {
                 Notes = notes
                     .Where(note => note.Direction < keyTypes.Count)
@@ -75,6 +77,8 @@ namespace FNFNewBot.Dto
                     .ToList(),
                 Mode = mode
             };
+            noteSection.CalculateLengthLimits();
+            return noteSection;
         }
 
         public static NoteSection From(List<SectionNotes1Detail> notes, DifficultyMode mode, List<KeyType> keyTypes)
@@ -90,18 +94,20 @@ namespace FNFNewBot.Dto
                 .OrderBy(noteData => Convert.ToDouble(noteData[0]))
                 .ToList();
 
-            return new NoteSection
+            var noteSection = new NoteSection
             {
                 Notes = filteredNotes
                     .Select(noteData => NoteInfo.From(Convert.ToInt32(noteData[1]) % keyCount, noteData.ToArray(), keyTypes[Convert.ToInt32(noteData[1]) % keyCount]))
                     .ToList(),
                 Mode = mode
             };
+            noteSection.CalculateLengthLimits();
+            return noteSection;
         }
 
         public static NoteSection From(List<Note3> notes, List<KeyType> keyTypes)
         {
-            return new NoteSection
+            var noteSection = new NoteSection
             {
                 Notes = notes
                     .Where(note => note.Id < keyTypes.Count)
@@ -109,6 +115,31 @@ namespace FNFNewBot.Dto
                     .ToList(),
                 Mode = DifficultyMode.Hard
             };
+            noteSection.CalculateLengthLimits();
+            return noteSection;
+        }
+
+        private void CalculateLengthLimits()
+        {
+            var notesGroupedByDirection = Notes
+                .GroupBy(note => note.Direction)
+                .ToDictionary(group => group.Key, group => group.OrderBy(note => note.Time).ToList());
+
+            foreach (var group in notesGroupedByDirection)
+            {
+                var notes = group.Value;
+                for (int i = 0; i < notes.Count; i++)
+                {
+                    if (i < notes.Count - 1)
+                    {
+                        notes[i].LengthLimit = notes[i + 1].Time - notes[i].Time;
+                    }
+                    else
+                    {
+                        notes[i].LengthLimit = (notes[i].Length ?? 0) + 1000;
+                    }
+                }
+            }
         }
 
         public NoteSection ToStart()
@@ -143,6 +174,7 @@ namespace FNFNewBot.Dto
         }
     }
 
+
     public class SongInfo
     {
         public int Version { get; set; }
@@ -160,7 +192,8 @@ namespace FNFNewBot.Dto
                     NoteSection.From(song.Notes.Easy, DifficultyMode.Easy, keyTypes),
                     NoteSection.From(song.Notes.Normal, DifficultyMode.Normal, keyTypes),
                     NoteSection.From(song.Notes.Hard, DifficultyMode.Hard, keyTypes),
-                    NoteSection.From(song.Notes.Erect, DifficultyMode.Erect, keyTypes)
+                    NoteSection.From(song.Notes.Erect, DifficultyMode.Erect, keyTypes),
+                    NoteSection.From(song.Notes.Nightmare, DifficultyMode.Nightmare, keyTypes),
                 }
             };
         }

@@ -26,6 +26,7 @@ namespace FNFNewBot
         private Song3? _currentSong3;
         private string _selectedDifficulty;
         private RichTextBoxLogger _logger;
+        private Random _random = new Random();
 
         public MainForm()
         {
@@ -197,7 +198,9 @@ namespace FNFNewBot
         {
             foreach (NoteInfo note in notes)
             {
-                long targetTimeNanoseconds = (long)(note.Time * OneMillion);
+                int saltRange = (int)nUDSalt.Value;
+                int randomSalt = _random.Next(-saltRange, saltRange + 1);
+                long targetTimeNanoseconds = (long)((note.Time + randomSalt) * OneMillion);
                 WaitForNanoseconds(_stopwatch, targetTimeNanoseconds);
                 if (_isClosing) break;
                 PressKey(note);
@@ -210,21 +213,17 @@ namespace FNFNewBot
             double? length = note.Length;
 
             KeyType keyType = note.KeyType;
-
             uint scanCode = note.ScanCode;
 
             keybd_event(keyType.Code, (byte)scanCode, 0, 0);
 
-            if (length is > 0)
-            {
-                _logger.Log($"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{length.Value + (int)nUDHoldTime.Value}", keyType.Color);
-                WaitForNanoseconds(Stopwatch.StartNew(), (long)((length.Value + (int)nUDHoldTime.Value) * OneMillion));
-            }
-            else
-            {
-                _logger.Log($"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{nUDPressTime.Value}", keyType.Color);
-                WaitForNanoseconds(Stopwatch.StartNew(), (int)nUDPressTime.Value * OneMillion);
-            }
+            double holdTime = length is > 0
+                ? Math.Min(length.Value + (int)nUDHoldTime.Value, note.LengthLimit - 10)
+                : Math.Min((int)nUDPressTime.Value, note.LengthLimit - 10);
+
+            _logger.Log($"{_stopwatch.ElapsedMilliseconds}\t{new string('\t', direction)}{keyType.Name}{new string('\t', _keyTypes.Count - direction)}{holdTime}", keyType.Color);
+
+            WaitForNanoseconds(Stopwatch.StartNew(), (long)(holdTime * OneMillion));
 
             keybd_event(keyType.Code, (byte)scanCode, 2, 0);
         }
@@ -232,12 +231,13 @@ namespace FNFNewBot
         private void WaitForNanoseconds(Stopwatch stopwatch, long nanoseconds)
         {
             long targetTicks = (long)(nanoseconds * 0.01);
-            while (stopwatch.ElapsedTicks < targetTicks + (int)nUDSalt.Value * 10_000)
+            while (stopwatch.ElapsedTicks < targetTicks)
             {
                 if (_isClosing) break;
                 Thread.SpinWait(1);
             }
         }
+
 
         private void PopulateTreeView(string path)
         {
@@ -414,10 +414,10 @@ namespace FNFNewBot
 
                 switch (key)
                 {
-                    case Keys.Escape:
+                    case Keys.F2:
                         _isClosing = _isExecuting;
                         break;
-                    case Keys.D9:
+                    case Keys.F1:
                         ExecuteNotesInParallelAsync();
                         break;
                     case Keys.D1:
