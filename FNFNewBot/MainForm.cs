@@ -414,10 +414,10 @@ namespace FNFNewBot
 
                 switch (key)
                 {
-                    case Keys.F2:
+                    case Keys.End:
                         _isClosing = _isExecuting;
                         break;
-                    case Keys.F1:
+                    case Keys.Delete:
                         ExecuteNotesInParallelAsync();
                         break;
                     case Keys.D1:
